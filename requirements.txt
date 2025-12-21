@@ -1,0 +1,36 @@
+# Main project (task.py, sync_server.py, mysql_backup_gui.py)
+pytz>=2024.1
+playsound==1.2.2
+boto3>=1.28.0
+
+# automation_otithee/index_gui.py
+Pillow>=10.0.0
+sv-ttk>=2.0.0
+
+# automation_otithee/ (common for all tools)
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+pandas>=2.0.0
+openpyxl>=3.1.0
+urllib3>=2.0.0
+
+# automation_otithee/buy_package_bot/GUI/
+PyPDF2>=3.0.0
+tabula-py>=2.5.0
+lxml>=4.9.0
+selenium>=4.15.0
+webdriver-manager>=4.0.0
+
+# ossl/Testing Report All/
+pytest>=7.4.3
+playwright>=1.40.0
+faker>=20.0.0
+
+# ossl/Employee Create BOT/
+python-dotenv>=1.0.0
+
+# Build dependencies (optional)
+pyinstaller>=6.0.0
+nuitka>=2.0
+zstandard>=0.21.0
+ordered-set>=4.1.0

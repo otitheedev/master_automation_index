@@ -1,0 +1,196 @@
+type,url,link_url,link_text,status,response_time,error_message,timestamp
+route_link_test,http://localhost:8000/hr/leave/balances/report,hr/leave/balances/report,Route: hr/leave/balances/report,PASS,N/A,,2025-12-18 18:35:26
+route_link_test,http://localhost:8000/hr/recruitment/job-categories/create,hr/recruitment/job-categories/create,Route: hr/recruitment/job-categories/create,PASS,N/A,,2025-12-18 18:35:28
+route_link_test,http://localhost:8000/accounting/reports/cash-book,accounting/reports/cash-book,Route: accounting/reports/cash-book,PASS,N/A,,2025-12-18 18:35:30
+route_link_test,http://localhost:8000/admin/settings/currencies/create,admin/settings/currencies/create,Route: admin/settings/currencies/create,PASS,N/A,,2025-12-18 18:35:32
+route_link_test,http://localhost:8000/hr/payroll/components,hr/payroll/components,Route: hr/payroll/components,PASS,N/A,,2025-12-18 18:35:34
+route_link_test,http://localhost:8000/hr/leave/types/create,hr/leave/types/create,Route: hr/leave/types/create,PASS,N/A,,2025-12-18 18:35:36
+route_link_test,http://localhost:8000/app/download,app/download,Route: app/download,ERROR,N/A,Network Error - Check internet connection,2025-12-18 18:35:36
+route_link_test,http://localhost:8000/accounting/chart-of-accounts/create,accounting/chart-of-accounts/create,Route: accounting/chart-of-accounts/create,PASS,N/A,,2025-12-18 18:35:38
+route_link_test,http://localhost:8000/accounting/reports/journal-register,accounting/reports/journal-register,Route: accounting/reports/journal-register,PASS,N/A,,2025-12-18 18:35:39
+route_link_test,http://localhost:8000/accounting/reports/bank-book,accounting/reports/bank-book,Route: accounting/reports/bank-book,PASS,N/A,,2025-12-18 18:35:41
+route_link_test,http://localhost:8000/accounting/reports/transaction,accounting/reports/transaction,Route: accounting/reports/transaction,PASS,N/A,,2025-12-18 18:35:43
+route_link_test,http://localhost:8000/accounting/bank-accounts/create,accounting/bank-accounts/create,Route: accounting/bank-accounts/create,PASS,N/A,,2025-12-18 18:35:45
+route_link_test,http://localhost:8000/hr/payroll/payrolls/create,hr/payroll/payrolls/create,Route: hr/payroll/payrolls/create,PASS,N/A,,2025-12-18 18:35:47
+route_link_test,http://localhost:8000/accounting/reports/ap-aging,accounting/reports/ap-aging,Route: accounting/reports/ap-aging,PASS,N/A,,2025-12-18 18:35:48
+route_link_test,http://localhost:8000/hr/letter-heads/generations/create,hr/letter-heads/generations/create,Route: hr/letter-heads/generations/create,PASS,N/A,,2025-12-18 18:35:50
+route_link_test,http://localhost:8000/accounting/tax-groups,accounting/tax-groups,Route: accounting/tax-groups,PASS,N/A,,2025-12-18 18:35:52
+route_link_test,http://localhost:8000/hr/leave/reports/calendar,hr/leave/reports/calendar,Route: hr/leave/reports/calendar,PASS,N/A,,2025-12-18 18:35:54
+route_link_test,http://localhost:8000/admin,admin,Route: admin,PASS,N/A,,2025-12-18 18:35:56
+route_link_test,http://localhost:8000/hr/recruitment/offers/create,hr/recruitment/offers/create,Route: hr/recruitment/offers/create,PASS,N/A,,2025-12-18 18:35:57
+route_link_test,http://localhost:8000/accounting/payments/create,accounting/payments/create,Route: accounting/payments/create,PASS,N/A,,2025-12-18 18:35:59
+route_link_test,http://localhost:8000/accounting/reports/income-vs-expense,accounting/reports/income-vs-expense,Route: accounting/reports/income-vs-expense,PASS,N/A,,2025-12-18 18:36:03
+route_link_test,http://localhost:8000/hr/recruitment/job-postings,hr/recruitment/job-postings,Route: hr/recruitment/job-postings,PASS,N/A,,2025-12-18 18:36:05
+route_link_test,http://localhost:8000/hr/recruitment/onboarding/checklists,hr/recruitment/onboarding/checklists,Route: hr/recruitment/onboarding/checklists,PASS,N/A,,2025-12-18 18:36:07
+route_link_test,http://localhost:8000/accounting/invoices,accounting/invoices,Route: accounting/invoices,PASS,N/A,,2025-12-18 18:36:09
+route_link_test,http://localhost:8000/accounting/credit-notes/create,accounting/credit-notes/create,Route: accounting/credit-notes/create,PASS,N/A,,2025-12-18 18:36:11
+route_link_test,http://localhost:8000/accounting/bank-reconciliations,accounting/bank-reconciliations,Route: accounting/bank-reconciliations,PASS,N/A,,2025-12-18 18:36:13
+route_link_test,http://localhost:8000/sync-data/recordings,sync-data/recordings,Route: sync-data/recordings,PASS,N/A,,2025-12-18 18:36:14
+route_link_test,http://localhost:8000/accounting/account-transfers/create,accounting/account-transfers/create,Route: accounting/account-transfers/create,PASS,N/A,,2025-12-18 18:36:16
+route_link_test,http://localhost:8000/accounting/bank-transactions,accounting/bank-transactions,Route: accounting/bank-transactions,PASS,N/A,,2025-12-18 18:36:18
+route_link_test,http://localhost:8000/hr/leave/types,hr/leave/types,Route: hr/leave/types,PASS,N/A,,2025-12-18 18:36:20
+route_link_test,http://localhost:8000/hr/recruitment/job-locations,hr/recruitment/job-locations,Route: hr/recruitment/job-locations,PASS,N/A,,2025-12-18 18:36:22
+route_link_test,http://localhost:8000/admin/settings/currencies,admin/settings/currencies,Route: admin/settings/currencies,PASS,N/A,,2025-12-18 18:36:24
+route_link_test,http://localhost:8000/hr/leave/balances,hr/leave/balances,Route: hr/leave/balances,PASS,N/A,,2025-12-18 18:36:27
+route_link_test,http://localhost:8000/hr/offices,hr/offices,Route: hr/offices,PASS,N/A,,2025-12-18 18:36:29
+route_link_test,http://localhost:8000/hr/recruitment/job-types,hr/recruitment/job-types,Route: hr/recruitment/job-types,PASS,N/A,,2025-12-18 18:36:30
+route_link_test,http://localhost:8000/role-permission/roles/create,role-permission/roles/create,Route: role-permission/roles/create,PASS,N/A,,2025-12-18 18:36:32
+route_link_test,http://localhost:8000/hr/payroll/tax-brackets/create,hr/payroll/tax-brackets/create,Route: hr/payroll/tax-brackets/create,PASS,N/A,,2025-12-18 18:36:34
+route_link_test,http://localhost:8000/inventory,inventory,Route: inventory,PASS,N/A,,2025-12-18 18:36:36
+route_link_test,http://localhost:8000/accounting/reports/tax-summary,accounting/reports/tax-summary,Route: accounting/reports/tax-summary,PASS,N/A,,2025-12-18 18:36:38
+route_link_test,http://localhost:8000/accounting/tax-groups/create,accounting/tax-groups/create,Route: accounting/tax-groups/create,PASS,N/A,,2025-12-18 18:36:40
+route_link_test,http://localhost:8000/accounting/chart-of-accounts,accounting/chart-of-accounts,Route: accounting/chart-of-accounts,PASS,N/A,,2025-12-18 18:36:44
+route_link_test,http://localhost:8000/hr/recruitment/candidates/create,hr/recruitment/candidates/create,Route: hr/recruitment/candidates/create,PASS,N/A,,2025-12-18 18:36:45
+route_link_test,http://localhost:8000/hr/payroll/periods/create,hr/payroll/periods/create,Route: hr/payroll/periods/create,PASS,N/A,,2025-12-18 18:36:47
+route_link_test,http://localhost:8000/accounting/tax-rates,accounting/tax-rates,Route: accounting/tax-rates,PASS,N/A,,2025-12-18 18:36:49
+route_link_test,http://localhost:8000/hr/shifts/create,hr/shifts/create,Route: hr/shifts/create,PASS,N/A,,2025-12-18 18:36:51
+route_link_test,http://localhost:8000/sync-data/phonebook,sync-data/phonebook,Route: sync-data/phonebook,PASS,N/A,,2025-12-18 18:36:53
+route_link_test,http://localhost:8000/accounting/reports/sales-register,accounting/reports/sales-register,Route: accounting/reports/sales-register,PASS,N/A,,2025-12-18 18:36:55
+route_link_test,http://localhost:8000/hr/employee-status/create,hr/employee-status/create,Route: hr/employee-status/create,PASS,N/A,,2025-12-18 18:36:56
+route_link_test,http://localhost:8000/hr/recruitment/job-requisitions,hr/recruitment/job-requisitions,Route: hr/recruitment/job-requisitions,PASS,N/A,,2025-12-18 18:36:58
+route_link_test,http://localhost:8000/hr/recruitment/interviews,hr/recruitment/interviews,Route: hr/recruitment/interviews,PASS,N/A,,2025-12-18 18:37:00
+route_link_test,http://localhost:8000/hr/recruitment/candidate-assessments,hr/recruitment/candidate-assessments,Route: hr/recruitment/candidate-assessments,PASS,N/A,,2025-12-18 18:37:02
+route_link_test,http://localhost:8000/accounting/fiscal-years/create,accounting/fiscal-years/create,Route: accounting/fiscal-years/create,PASS,N/A,,2025-12-18 18:37:04
+route_link_test,http://localhost:8000/hr/recruitment/interview-rounds,hr/recruitment/interview-rounds,Route: hr/recruitment/interview-rounds,PASS,N/A,,2025-12-18 18:37:06
+route_link_test,http://localhost:8000/hr/employees,hr/employees,Route: hr/employees,PASS,N/A,,2025-12-18 18:37:08
+route_link_test,http://localhost:8000/hr/offboarding/employees/create,hr/offboarding/employees/create,Route: hr/offboarding/employees/create,PASS,N/A,,2025-12-18 18:37:10
+route_link_test,http://localhost:8000/accounting/reports/profit-loss,accounting/reports/profit-loss,Route: accounting/reports/profit-loss,PASS,N/A,,2025-12-18 18:37:12
+route_link_test,http://localhost:8000/role-permission/permissions/create,role-permission/permissions/create,Route: role-permission/permissions/create,PASS,N/A,,2025-12-18 18:37:14
+route_link_test,http://localhost:8000/hr/payroll/payrolls,hr/payroll/payrolls,Route: hr/payroll/payrolls,PASS,N/A,,2025-12-18 18:37:15
+route_link_test,http://localhost:8000/role-permission,role-permission,Route: role-permission,PASS,N/A,,2025-12-18 18:37:17
+route_link_test,http://localhost:8000/hr/recruitment/candidate-sources/create,hr/recruitment/candidate-sources/create,Route: hr/recruitment/candidate-sources/create,PASS,N/A,,2025-12-18 18:37:19
+route_link_test,http://localhost:8000/accounting/contra-vouchers,accounting/contra-vouchers,Route: accounting/contra-vouchers,PASS,N/A,,2025-12-18 18:37:23
+route_link_test,http://localhost:8000/hr,hr,Route: hr,PASS,N/A,,2025-12-18 18:37:25
+route_link_test,http://localhost:8000/hr/leave,hr/leave,Route: hr/leave,PASS,N/A,,2025-12-18 18:37:27
+route_link_test,http://localhost:8000/sendsms,sendsms,Route: sendsms,PASS,N/A,,2025-12-18 18:37:29
+route_link_test,http://localhost:8000/sync-data/settings,sync-data/settings,Route: sync-data/settings,PASS,N/A,,2025-12-18 18:37:31
+route_link_test,http://localhost:8000/accounting/reports/expense-summary,accounting/reports/expense-summary,Route: accounting/reports/expense-summary,PASS,N/A,,2025-12-18 18:37:33
+route_link_test,http://localhost:8000/accounting/audit-logs,accounting/audit-logs,Route: accounting/audit-logs,PASS,N/A,,2025-12-18 18:37:35
+route_link_test,http://localhost:8000/dashboard,dashboard,Route: dashboard,PASS,N/A,,2025-12-18 18:37:37
+route_link_test,http://localhost:8000/hr/leave/reports/summary,hr/leave/reports/summary,Route: hr/leave/reports/summary,PASS,N/A,,2025-12-18 18:37:39
+route_link_test,http://localhost:8000/hr/recruitment/candidate-assessments/create,hr/recruitment/candidate-assessments/create,Route: hr/recruitment/candidate-assessments/create,PASS,N/A,,2025-12-18 18:37:41
+route_link_test,http://localhost:8000/accounting/bank-transactions/create,accounting/bank-transactions/create,Route: accounting/bank-transactions/create,PASS,N/A,,2025-12-18 18:37:42
+route_link_test,http://localhost:8000/accounting/journal-entries,accounting/journal-entries,Route: accounting/journal-entries,PASS,N/A,,2025-12-18 18:37:44
+route_link_test,http://localhost:8000/hr/payroll/salary-structures/create,hr/payroll/salary-structures/create,Route: hr/payroll/salary-structures/create,PASS,N/A,,2025-12-18 18:37:46
+route_link_test,http://localhost:8000/hr/attendance-revision-requests,hr/attendance-revision-requests,Route: hr/attendance-revision-requests,PASS,N/A,,2025-12-18 18:37:48
+route_link_test,http://localhost:8000/privacy-policy,privacy-policy,Route: privacy-policy,PASS,N/A,,2025-12-18 18:37:50
+route_link_test,http://localhost:8000/sync-data/screenshots,sync-data/screenshots,Route: sync-data/screenshots,PASS,N/A,,2025-12-18 18:37:52
+route_link_test,http://localhost:8000/accounting/vendors,accounting/vendors,Route: accounting/vendors,PASS,N/A,,2025-12-18 18:37:54
+route_link_test,http://localhost:8000/accounting/reports/account-statement,accounting/reports/account-statement,Route: accounting/reports/account-statement,PASS,N/A,,2025-12-18 18:37:56
+route_link_test,http://localhost:8000/accounting/reports/invoice-summary,accounting/reports/invoice-summary,Route: accounting/reports/invoice-summary,PASS,N/A,,2025-12-18 18:37:57
+route_link_test,http://localhost:8000/hr/letter-heads/templates/create,hr/letter-heads/templates/create,Route: hr/letter-heads/templates/create,PASS,N/A,,2025-12-18 18:38:00
+route_link_test,http://localhost:8000/hr/notices/create,hr/notices/create,Route: hr/notices/create,PASS,N/A,,2025-12-18 18:38:03
+route_link_test,http://localhost:8000/hr/recruitment/onboarding/checklists/create,hr/recruitment/onboarding/checklists/create,Route: hr/recruitment/onboarding/checklists/create,PASS,N/A,,2025-12-18 18:38:05
+route_link_test,http://localhost:8000/accounting/debit-notes/create,accounting/debit-notes/create,Route: accounting/debit-notes/create,PASS,N/A,,2025-12-18 18:38:07
+route_link_test,http://localhost:8000/accounting/reports/bill-summary,accounting/reports/bill-summary,Route: accounting/reports/bill-summary,PASS,N/A,,2025-12-18 18:38:09
+route_link_test,http://localhost:8000/hr/designations/create,hr/designations/create,Route: hr/designations/create,PASS,N/A,,2025-12-18 18:38:10
+route_link_test,http://localhost:8000/hr/payroll/salary-structures,hr/payroll/salary-structures,Route: hr/payroll/salary-structures,PASS,N/A,,2025-12-18 18:38:12
+route_link_test,http://localhost:8000/accounting/journal-entries/create,accounting/journal-entries/create,Route: accounting/journal-entries/create,PASS,N/A,,2025-12-18 18:38:14
+route_link_test,http://localhost:8000/hr/leave/available-balance,hr/leave/available-balance,Route: hr/leave/available-balance,PASS,N/A,,2025-12-18 18:38:16
+route_link_test,http://localhost:8000/accounting/invoices/create,accounting/invoices/create,Route: accounting/invoices/create,PASS,N/A,,2025-12-18 18:38:18
+route_link_test,http://localhost:8000/sync-data/location-info/tracking,sync-data/location-info/tracking,Route: sync-data/location-info/tracking,PASS,N/A,,2025-12-18 18:38:21
+route_link_test,http://localhost:8000/up,up,Route: up,PASS,N/A,,2025-12-18 18:38:23
+route_link_test,http://localhost:8000/hr/recruitment/job-requisitions/create,hr/recruitment/job-requisitions/create,Route: hr/recruitment/job-requisitions/create,PASS,N/A,,2025-12-18 18:38:25
+route_link_test,http://localhost:8000/hr/recruitment/interview-types/create,hr/recruitment/interview-types/create,Route: hr/recruitment/interview-types/create,PASS,N/A,,2025-12-18 18:38:26
+route_link_test,http://localhost:8000/accounting/reports/trial-balance,accounting/reports/trial-balance,Route: accounting/reports/trial-balance,PASS,N/A,,2025-12-18 18:38:28
+route_link_test,http://localhost:8000/sync-data/call-list,sync-data/call-list,Route: sync-data/call-list,PASS,N/A,,2025-12-18 18:38:30
+route_link_test,http://localhost:8000/hr/recruitment/interview-types,hr/recruitment/interview-types,Route: hr/recruitment/interview-types,PASS,N/A,,2025-12-18 18:38:32
+route_link_test,http://localhost:8000/accounting/tax-rates/create,accounting/tax-rates/create,Route: accounting/tax-rates/create,PASS,N/A,,2025-12-18 18:38:34
+route_link_test,http://localhost:8000/hr/leave/create,hr/leave/create,Route: hr/leave/create,PASS,N/A,,2025-12-18 18:38:36
+route_link_test,http://localhost:8000/hr/letter-heads/templates,hr/letter-heads/templates,Route: hr/letter-heads/templates,PASS,N/A,,2025-12-18 18:38:38
+route_link_test,http://localhost:8000/admin/settings/system/api-statistics,admin/settings/system/api-statistics,Route: admin/settings/system/api-statistics,PASS,N/A,,2025-12-18 18:38:39
+route_link_test,http://localhost:8000/hr/payroll/tax-brackets,hr/payroll/tax-brackets,Route: hr/payroll/tax-brackets,PASS,N/A,,2025-12-18 18:38:43
+route_link_test,http://localhost:8000/admin/modules,admin/modules,Route: admin/modules,PASS,N/A,,2025-12-18 18:38:45
+route_link_test,http://localhost:8000/accounting/reports/ar-aging,accounting/reports/ar-aging,Route: accounting/reports/ar-aging,PASS,N/A,,2025-12-18 18:38:47
+route_link_test,http://localhost:8000/hr/holidays,hr/holidays,Route: hr/holidays,PASS,N/A,,2025-12-18 18:38:49
+route_link_test,http://localhost:8000/role-permission/roles,role-permission/roles,Route: role-permission/roles,PASS,N/A,,2025-12-18 18:38:51
+route_link_test,http://localhost:8000/hr/leave/pending-approvals,hr/leave/pending-approvals,Route: hr/leave/pending-approvals,PASS,N/A,,2025-12-18 18:38:52
+route_link_test,http://localhost:8000/hr/holidays-calendar,hr/holidays-calendar,Route: hr/holidays-calendar,PASS,N/A,,2025-12-18 18:38:54
+route_link_test,http://localhost:8000/hr/payroll/components/create,hr/payroll/components/create,Route: hr/payroll/components/create,PASS,N/A,,2025-12-18 18:38:56
+route_link_test,http://localhost:8000/hr/holidays/create,hr/holidays/create,Route: hr/holidays/create,PASS,N/A,,2025-12-18 18:38:58
+route_link_test,http://localhost:8000/accounting/credit-notes,accounting/credit-notes,Route: accounting/credit-notes,PASS,N/A,,2025-12-18 18:39:00
+route_link_test,http://localhost:8000/accounting/vendors/create,accounting/vendors/create,Route: accounting/vendors/create,PASS,N/A,,2025-12-18 18:39:01
+route_link_test,http://localhost:8000/hr/attendance/report,hr/attendance/report,Route: hr/attendance/report,PASS,N/A,,2025-12-18 18:39:03
+route_link_test,http://localhost:8000/hr/departments,hr/departments,Route: hr/departments,PASS,N/A,,2025-12-18 18:39:05
+route_link_test,http://localhost:8000/hr/attendance/report/details,hr/attendance/report/details,Route: hr/attendance/report/details,PASS,N/A,,2025-12-18 18:39:07
+route_link_test,http://localhost:8000/hr/notices,hr/notices,Route: hr/notices,PASS,N/A,,2025-12-18 18:39:09
+route_link_test,http://localhost:8000/hr/shifts,hr/shifts,Route: hr/shifts,PASS,N/A,,2025-12-18 18:39:12
+route_link_test,http://localhost:8000/hr/leave/settings,hr/leave/settings,Route: hr/leave/settings,PASS,N/A,,2025-12-18 18:39:13
+route_link_test,http://localhost:8000/accounting/cheques/create,accounting/cheques/create,Route: accounting/cheques/create,PASS,N/A,,2025-12-18 18:39:15
+route_link_test,http://localhost:8000/accounting/customers/create,accounting/customers/create,Route: accounting/customers/create,PASS,N/A,,2025-12-18 18:39:17
+route_link_test,http://localhost:8000/role-permission/permissions,role-permission/permissions,Route: role-permission/permissions,PASS,N/A,,2025-12-18 18:39:19
+route_link_test,http://localhost:8000/accounting/accounting-periods,accounting/accounting-periods,Route: accounting/accounting-periods,PASS,N/A,,2025-12-18 18:39:23
+route_link_test,http://localhost:8000/hr/recruitment/interviews/create,hr/recruitment/interviews/create,Route: hr/recruitment/interviews/create,PASS,N/A,,2025-12-18 18:39:24
+route_link_test,http://localhost:8000/hr/offboarding/checklists/create,hr/offboarding/checklists/create,Route: hr/offboarding/checklists/create,PASS,N/A,,2025-12-18 18:39:26
+route_link_test,http://localhost:8000/admin/settings/system/widgets,admin/settings/system/widgets,Route: admin/settings/system/widgets,PASS,N/A,,2025-12-18 18:39:28
+route_link_test,http://localhost:8000/hr/recruitment/job-postings/create,hr/recruitment/job-postings/create,Route: hr/recruitment/job-postings/create,PASS,N/A,,2025-12-18 18:39:30
+route_link_test,http://localhost:8000/accounting,accounting,Route: accounting,PASS,N/A,,2025-12-18 18:39:32
+route_link_test,http://localhost:8000/hr/recruitment/onboarding/candidates,hr/recruitment/onboarding/candidates,Route: hr/recruitment/onboarding/candidates,PASS,N/A,,2025-12-18 18:39:34
+route_link_test,http://localhost:8000/accounting/cheques,accounting/cheques,Route: accounting/cheques,PASS,N/A,,2025-12-18 18:39:36
+route_link_test,http://localhost:8000/hr/attendance/all-employees-report,hr/attendance/all-employees-report,Route: hr/attendance/all-employees-report,PASS,N/A,,2025-12-18 18:39:54
+route_link_test,http://localhost:8000/hr/recruitment/offers,hr/recruitment/offers,Route: hr/recruitment/offers,PASS,N/A,,2025-12-18 18:39:56
+route_link_test,http://localhost:8000/accounting/bank-reconciliations/create,accounting/bank-reconciliations/create,Route: accounting/bank-reconciliations/create,PASS,N/A,,2025-12-18 18:39:58
+route_link_test,http://localhost:8000/accounting/account-transfers,accounting/account-transfers,Route: accounting/account-transfers,PASS,N/A,,2025-12-18 18:40:00
+route_link_test,http://localhost:8000/sync-data/media-gallery,sync-data/media-gallery,Route: sync-data/media-gallery,PASS,N/A,,2025-12-18 18:40:02
+route_link_test,http://localhost:8000/hr/recruitment/offer-templates/create,hr/recruitment/offer-templates/create,Route: hr/recruitment/offer-templates/create,PASS,N/A,,2025-12-18 18:40:04
+route_link_test,http://localhost:8000/hr/payroll/tax-rebate-rules/create,hr/payroll/tax-rebate-rules/create,Route: hr/payroll/tax-rebate-rules/create,PASS,N/A,,2025-12-18 18:40:06
+route_link_test,http://localhost:8000/hr/offboarding/employees,hr/offboarding/employees,Route: hr/offboarding/employees,PASS,N/A,,2025-12-18 18:40:08
+route_link_test,http://localhost:8000/hr/payroll/employee-investments/create,hr/payroll/employee-investments/create,Route: hr/payroll/employee-investments/create,PASS,N/A,,2025-12-18 18:40:10
+route_link_test,http://localhost:8000/accounting/reports/day-book,accounting/reports/day-book,Route: accounting/reports/day-book,PASS,N/A,,2025-12-18 18:40:11
+route_link_test,http://localhost:8000/accounting/customers,accounting/customers,Route: accounting/customers,PASS,N/A,,2025-12-18 18:40:13
+route_link_test,http://localhost:8000/hr/leave/calculate-days,hr/leave/calculate-days,Route: hr/leave/calculate-days,PASS,N/A,,2025-12-18 18:40:15
+route_link_test,http://localhost:8000/hr/recruitment/offer-templates,hr/recruitment/offer-templates,Route: hr/recruitment/offer-templates,PASS,N/A,,2025-12-18 18:40:19
+route_link_test,http://localhost:8000/hr/recruitment/onboarding/candidates/create,hr/recruitment/onboarding/candidates/create,Route: hr/recruitment/onboarding/candidates/create,PASS,N/A,,2025-12-18 18:40:21
+route_link_test,http://localhost:8000/hr/offices/create,hr/offices/create,Route: hr/offices/create,PASS,N/A,,2025-12-18 18:40:23
+route_link_test,http://localhost:8000/hr/payroll/periods,hr/payroll/periods,Route: hr/payroll/periods,PASS,N/A,,2025-12-18 18:40:24
+route_link_test,http://localhost:8000/hr/recruitment/job-locations/create,hr/recruitment/job-locations/create,Route: hr/recruitment/job-locations/create,PASS,N/A,,2025-12-18 18:40:26
+route_link_test,http://localhost:8000/hr/recruitment/interview-rounds/create,hr/recruitment/interview-rounds/create,Route: hr/recruitment/interview-rounds/create,PASS,N/A,,2025-12-18 18:40:28
+route_link_test,http://localhost:8000/accounting/reports/balance-sheet,accounting/reports/balance-sheet,Route: accounting/reports/balance-sheet,PASS,N/A,,2025-12-18 18:40:30
+route_link_test,http://localhost:8000/accounting/contra-vouchers/create,accounting/contra-vouchers/create,Route: accounting/contra-vouchers/create,PASS,N/A,,2025-12-18 18:40:32
+route_link_test,http://localhost:8000/accounting/reports/purchase-register,accounting/reports/purchase-register,Route: accounting/reports/purchase-register,PASS,N/A,,2025-12-18 18:40:33
+route_link_test,http://localhost:8000/admin/settings/system/menu,admin/settings/system/menu,Route: admin/settings/system/menu,PASS,N/A,,2025-12-18 18:40:35
+crud_create,accounting/customers,accounting/customers,CREATE accounting.customers,ERROR,N/A,Timeout 10000ms exceeded.,2025-12-18 18:40:48
+crud_read,http://localhost:8000/accounting/customers,http://localhost:8000/accounting/customers,READ accounting.customers,PASS,N/A,,2025-12-18 18:40:51
+crud_create,accounting/bank-accounts,accounting/bank-accounts,CREATE accounting.bank-accounts,ERROR,N/A,Timeout 10000ms exceeded.,2025-12-18 18:41:06
+crud_read,http://localhost:8000/accounting/bank-accounts,http://localhost:8000/accounting/bank-accounts,READ accounting.bank-accounts,PASS,N/A,,2025-12-18 18:41:09
+crud_read,http://localhost:8000/accounting/accounting-periods,http://localhost:8000/accounting/accounting-periods,READ accounting.accounting-periods,PASS,N/A,,2025-12-18 18:41:13
+crud_create,accounting/account-transfers,accounting/account-transfers,CREATE accounting.account-transfers,ERROR,N/A,Timeout 10000ms exceeded.,2025-12-18 18:41:28
+crud_read,http://localhost:8000/accounting/account-transfers,http://localhost:8000/accounting/account-transfers,READ accounting.account-transfers,PASS,N/A,,2025-12-18 18:41:31
+crud_create,accounting/invoices,accounting/invoices,CREATE accounting.invoices,ERROR,N/A,Timeout 10000ms exceeded.,2025-12-18 18:41:46
+crud_read,http://localhost:8000/accounting/invoices,http://localhost:8000/accounting/invoices,READ accounting.invoices,PASS,N/A,,2025-12-18 18:41:49
+crud_read,http://localhost:8000/accounting,http://localhost:8000/accounting,READ accounting.index,PASS,N/A,,2025-12-18 18:41:53
+crud_create,accounting/vendors,accounting/vendors,CREATE accounting.vendors,ERROR,N/A,Timeout 10000ms exceeded.,2025-12-18 18:42:08
+crud_read,http://localhost:8000/accounting/vendors,http://localhost:8000/accounting/vendors,READ accounting.vendors,PASS,N/A,,2025-12-18 18:42:11
+crud_read,http://localhost:8000/accounting/audit-logs,http://localhost:8000/accounting/audit-logs,READ accounting.audit-logs,PASS,N/A,,2025-12-18 18:42:16
+crud_create,hr/departments,hr/departments,CREATE hr.departments,ERROR,N/A,Timeout 10000ms exceeded.,2025-12-18 18:42:30
+crud_read,http://localhost:8000/hr/departments,http://localhost:8000/hr/departments,READ hr.departments,PASS,N/A,,2025-12-18 18:42:33
+crud_create,accounting/payments,accounting/payments,CREATE accounting.payments,ERROR,N/A,Timeout 10000ms exceeded.,2025-12-18 18:42:48
+crud_read,http://localhost:8000/accounting/payments,http://localhost:8000/accounting/payments,READ accounting.payments,PASS,N/A,,2025-12-18 18:42:51
+crud_create,hr/leave/types,hr/leave/types,CREATE hr.leave,ERROR,N/A,Timeout 10000ms exceeded.,2025-12-18 18:43:06
+crud_read,http://localhost:8000/hr/leave/types,http://localhost:8000/hr/leave/types,READ hr.leave,PASS,N/A,,2025-12-18 18:43:09
+crud_create,accounting/bank-reconciliations,accounting/bank-reconciliations,CREATE accounting.bank-reconciliations,ERROR,N/A,Timeout 10000ms exceeded.,2025-12-18 18:43:23
+crud_read,http://localhost:8000/accounting/bank-reconciliations,http://localhost:8000/accounting/bank-reconciliations,READ accounting.bank-reconciliations,PASS,N/A,,2025-12-18 18:43:26
+crud_read,http://localhost:8000/hr/employees/{employee}/job-history,http://localhost:8000/hr/employees/{employee}/job-history,READ hr.employees,FAIL,N/A,Page title indicates error: Not Found,2025-12-18 18:43:33
+crud_create,hr/designations,hr/designations,CREATE hr.designations,ERROR,N/A,Timeout 10000ms exceeded.,2025-12-18 18:43:48
+crud_read,http://localhost:8000/hr/designations,http://localhost:8000/hr/designations,READ hr.designations,PASS,N/A,,2025-12-18 18:43:51
+crud_read,http://localhost:8000/hr/attendance,http://localhost:8000/hr/attendance,READ hr.attendance,PASS,N/A,,2025-12-18 18:43:55
+form_submission_test,http://localhost:8000/accounting/debit-notes/create,accounting/debit-notes/create,Create Form: accounting/debit-notes/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:44:10
+form_submission_test,http://localhost:8000/accounting/payments/create,accounting/payments/create,Create Form: accounting/payments/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:44:23
+form_submission_test,http://localhost:8000/accounting/credit-notes/create,accounting/credit-notes/create,Create Form: accounting/credit-notes/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:44:36
+form_submission_test,http://localhost:8000/accounting/customers/create,accounting/customers/create,Create Form: accounting/customers/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:44:49
+form_submission_test,http://localhost:8000/accounting/bank-accounts/create,accounting/bank-accounts/create,Create Form: accounting/bank-accounts/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:45:02
+form_submission_test,http://localhost:8000/hr/departments/create,hr/departments/create,Create Form: hr/departments/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:45:15
+form_submission_test,http://localhost:8000/accounting/bank-reconciliations/create,accounting/bank-reconciliations/create,Create Form: accounting/bank-reconciliations/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:45:28
+form_submission_test,http://localhost:8000/hr/designations/create,hr/designations/create,Create Form: hr/designations/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:45:40
+form_submission_test,http://localhost:8000/accounting/cheques/create,accounting/cheques/create,Create Form: accounting/cheques/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:45:53
+form_submission_test,http://localhost:8000/accounting/tax-groups/create,accounting/tax-groups/create,Create Form: accounting/tax-groups/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:46:06
+form_submission_test,http://localhost:8000/admin/settings/currencies/create,admin/settings/currencies/create,Create Form: admin/settings/currencies/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:46:19
+form_submission_test,http://localhost:8000/accounting/account-transfers/create,accounting/account-transfers/create,Create Form: accounting/account-transfers/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:46:32
+form_submission_test,http://localhost:8000/accounting/chart-of-accounts/create,accounting/chart-of-accounts/create,Create Form: accounting/chart-of-accounts/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:46:45
+form_submission_test,http://localhost:8000/accounting/tax-rates/create,accounting/tax-rates/create,Create Form: accounting/tax-rates/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:46:58
+form_submission_test,http://localhost:8000/accounting/journal-entries/create,accounting/journal-entries/create,Create Form: accounting/journal-entries/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:47:11
+form_submission_test,http://localhost:8000/accounting/vendors/create,accounting/vendors/create,Create Form: accounting/vendors/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:47:24
+form_submission_test,http://localhost:8000/accounting/bank-transactions/create,accounting/bank-transactions/create,Create Form: accounting/bank-transactions/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:47:36
+form_submission_test,http://localhost:8000/accounting/fiscal-years/create,accounting/fiscal-years/create,Create Form: accounting/fiscal-years/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:47:49
+form_submission_test,http://localhost:8000/accounting/invoices/create,accounting/invoices/create,Create Form: accounting/invoices/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:48:02
+form_submission_test,http://localhost:8000/accounting/contra-vouchers/create,accounting/contra-vouchers/create,Create Form: accounting/contra-vouchers/create,FAIL,N/A,"Filled 0 fields, submitted: False",2025-12-18 18:48:15
