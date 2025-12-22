@@ -112,8 +112,10 @@ All automation tools feature:
 ## 🔧 Configuration
 
 ### Database
-- Default location: `%APPDATA%\DailyDashboard\database\sweethart.db` (Windows)
-- Portable mode: Create `portable.txt` file next to `task.py` to use `./database/sweethart.db`
+- Main dashboard DB file: **`taskmask.db`** (used by all dashboard features)
+- Default location (Windows): `%APPDATA%\DailyDashboard\database\taskmask.db`
+- Default location (Linux): `~/DailyDashboard/database/taskmask.db`
+- Portable mode: Create `portable.txt` next to `task.py` to use `./database/taskmask.db`
 
 ### Cloud Sync (Optional)
 Configure in **Tools → Settings**:

@@ -33,16 +33,40 @@ import subprocess
 import threading
 import tkinter as tk
 import base64
+import json
 from datetime import datetime
 from tkinter import filedialog, messagebox, simpledialog
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 from pathlib import Path
+import ftplib
+import urllib.request
+import urllib.parse
+import tarfile
 
 # Add project root to path for icon_utils
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from icon_utils import set_window_icon
+
+# Optional S3 support
+try:
+    import boto3  # type: ignore
+    from botocore.exceptions import ClientError, NoCredentialsError  # type: ignore
+    S3_AVAILABLE = True
+except Exception:  # pragma: no cover - best-effort import
+    S3_AVAILABLE = False
+
+# Optional Google Drive support (service account)
+try:
+    from googleapiclient.discovery import build  # type: ignore
+    from googleapiclient.http import MediaFileUpload  # type: ignore
+    from googleapiclient.errors import HttpError  # type: ignore
+    from google.oauth2.service_account import Credentials  # type: ignore
+
+    GDRIVE_AVAILABLE = True
+except Exception:  # pragma: no cover - best-effort import
+    GDRIVE_AVAILABLE = False
 
 
 # Color scheme
@@ -64,38 +88,11 @@ class DatabaseManager:
     
     def __init__(self, db_path=None):
         if db_path is None:
-            # Cross-platform secure path for storing credentials
-            # Linux: ~/.local/share/mysql_backup_tool/ (follows XDG Base Directory spec)
-            # Windows: %LOCALAPPDATA%\mysql_backup_tool\ (user-specific, secure location)
-            system = platform.system()
-            
-            if system == "Windows":
-                # Windows: Use LOCALAPPDATA (user-specific, not synced)
-                appdata = os.getenv("LOCALAPPDATA")
-                if appdata:
-                    db_dir = Path(appdata) / "mysql_backup_tool"
-                else:
-                    # Fallback to user home
-                    db_dir = Path.home() / ".mysql_backup_tool"
-            else:
-                # Linux/Unix: Use XDG Base Directory spec (~/.local/share/)
-                xdg_data_home = os.getenv("XDG_DATA_HOME")
-                if xdg_data_home:
-                    db_dir = Path(xdg_data_home) / "mysql_backup_tool"
-                else:
-                    # Fallback to ~/.local/share/
-                    db_dir = Path.home() / ".local" / "share" / "mysql_backup_tool"
-            
-            # Create directory with secure permissions (700 = owner read/write/execute only)
+            # Store backup_tool.db alongside this script (inside mysql_client folder)
+            # so it's easy to find and move with the project.
+            script_dir = Path(__file__).resolve().parent
+            db_dir = script_dir
             db_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Set secure permissions on directory (Linux/Unix only)
-            if system != "Windows":
-                try:
-                    os.chmod(db_dir, stat.S_IRWXU)  # 700: owner only
-                except OSError:
-                    pass  # Ignore if chmod fails
-            
             db_path = db_dir / "backup_tool.db"
         
         self.db_path = db_path
@@ -746,6 +743,19 @@ def connect_and_load_databases():
             )
             return
 
+    # Persist last-used connection details to backup_tool.db (for auto-fill next time)
+    try:
+        last_conn = {
+            "server": server,
+            "port_override": port_override,
+            "user": user,
+            "password": password,
+        }
+        db_manager.set_setting("last_connection_json", json.dumps(last_conn))
+    except Exception:
+        # Non-fatal; ignore if settings save fails
+        pass
+
     set_busy(True, "Connecting to MySQL and loading databases...")
     threading.Thread(
         target=_connect_worker,
@@ -763,6 +773,7 @@ def _backup_worker(
     backup_dir: str,
     selected_dbs: list[str],
     connection_name: str = None,
+    remote_cfg: dict | None = None,
 ):
     """Background worker: backup all selected databases using mysqldump."""
     import time
@@ -828,6 +839,45 @@ def _backup_worker(
         except Exception as e:  # pylint: disable=broad-except
             errors.append(f"{db_name}: {e}")
 
+    # After local backup, optionally create archive + push to remote (HTTP/FTP/S3/GDrive)
+    archive_path = None
+    remote_error = None
+    if remote_cfg and remote_cfg.get("enabled"):
+        try:
+            # Create a single .tar.gz of the whole run folder
+            archive_name = os.path.basename(run_dir.rstrip(os.sep)) + ".tar.gz"
+            archive_path = os.path.join(backup_dir, archive_name)
+            with tarfile.open(archive_path, "w:gz") as tar:
+                tar.add(run_dir, arcname=os.path.basename(run_dir))
+
+            remote_type = remote_cfg.get("type", "http")
+            # Show progress info in the UI while uploading
+            try:
+                msg = "Uploading remote backup..."
+                if remote_type == "gdrive":
+                    msg = "Uploading remote backup to Google Drive..."
+                elif remote_type == "s3":
+                    msg = "Uploading remote backup to S3..."
+                elif remote_type == "ftp":
+                    msg = "Uploading remote backup via FTP..."
+                else:
+                    msg = "Uploading remote backup via HTTP..."
+                root.after(0, lambda: set_busy(True, msg))
+            except Exception:
+                pass
+
+            if remote_type == "ftp":
+                _backup_upload_ftp(archive_path, remote_cfg)
+            elif remote_type == "s3":
+                _backup_upload_s3(archive_path, remote_cfg)
+            elif remote_type == "gdrive":
+                _backup_upload_gdrive(archive_path, remote_cfg)
+            else:
+                _backup_upload_http(archive_path, remote_cfg)
+        except Exception as e:  # pragma: no cover - defensive
+            remote_error = str(e)
+            errors.append(f"Remote backup error: {e}")
+
     def _finish():
         duration = time.time() - start_time
         set_busy(False)
@@ -853,9 +903,14 @@ def _backup_worker(
             msg = "Some backups failed:\n\n" + "\n\n".join(errors)
             messagebox.showerror("Backup Completed with Errors", msg)
         else:
+            extra = ""
+            if archive_path and not remote_error:
+                extra = "\n\nRemote backup archive created and uploaded."
+            elif archive_path and remote_error:
+                extra = f"\n\nRemote backup archive created but upload failed:\n{remote_error}"
             messagebox.showinfo(
                 "Success",
-                f"Backup completed for {len(selected_dbs)} databases.\n\nSaved in:\n{run_dir}",
+                f"Backup completed for {len(selected_dbs)} databases.\n\nSaved in:\n{run_dir}{extra}",
             )
 
     root.after(0, _finish)
@@ -886,10 +941,40 @@ def backup_selected_databases():
         messagebox.showerror("Error", "Please select at least one database.")
         return
 
+    # Snapshot current remote backup configuration into a plain dict
+    remote_cfg = {
+        "enabled": bool(remote_backup_enabled_var.get()),
+        "type": remote_backup_type_var.get(),
+        # HTTP
+        "http_url": remote_http_url_var.get().strip(),
+        # FTP
+        "ftp_host": remote_ftp_host_var.get().strip(),
+        "ftp_port": remote_ftp_port_var.get().strip(),
+        "ftp_user": remote_ftp_user_var.get().strip(),
+        "ftp_pass": remote_ftp_pass_var.get(),
+        "ftp_path": remote_ftp_path_var.get().strip(),
+        # S3
+        "s3_bucket": remote_s3_bucket_var.get().strip(),
+        "s3_key": remote_s3_key_var.get().strip(),
+        "s3_region": remote_s3_region_var.get().strip(),
+        "s3_access": remote_s3_access_var.get().strip(),
+        "s3_secret": remote_s3_secret_var.get().strip(),
+        # Google Drive
+        "gdrive_folder_id": remote_gdrive_folder_id_var.get().strip(),
+        "gdrive_creds_path": remote_gdrive_creds_path_var.get().strip(),
+    }
+
+    # Persist remote backup configuration so it is remembered next time
+    try:
+        db_manager.set_setting("remote_backup_json", json.dumps(remote_cfg))
+    except Exception:
+        # Non-fatal; ignore if settings save fails
+        pass
+
     set_busy(True, f"Backing up {len(selected_dbs)} database(s)...")
     threading.Thread(
         target=_backup_worker,
-        args=(host, port, sock, user, password, backup_dir, selected_dbs, current_connection_name),
+        args=(host, port, sock, user, password, backup_dir, selected_dbs, current_connection_name, remote_cfg),
         daemon=True,
     ).start()
 
@@ -911,6 +996,117 @@ def _make_friendly_error(raw_err: str) -> str:
             "Socket error: check the Unix socket path or try using Host/Port instead.\n\n"
         )
     return ""
+
+
+# -------- Remote backup upload helpers (HTTP / FTP / S3) --------
+def _backup_upload_http(archive_path: str, cfg: dict) -> None:
+    """Upload archive to HTTP endpoint via POST (binary body)."""
+    url = (cfg.get("http_url") or "").strip()
+    if not url:
+        raise ValueError("HTTP URL is empty")
+    with open(archive_path, "rb") as f:
+        data = f.read()
+    req = urllib.request.Request(
+        url,
+        data=data,
+        method="POST",
+        headers={"Content-Type": "application/octet-stream"},
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:  # nosec B310
+        # We don't strictly care about the payload; ensure 2xx
+        if not (200 <= resp.status < 300):
+            raise RuntimeError(f"HTTP upload failed with status {resp.status}")
+
+
+def _backup_upload_ftp(archive_path: str, cfg: dict) -> None:
+    host = (cfg.get("ftp_host") or "").strip()
+    user = (cfg.get("ftp_user") or "").strip()
+    if not host or not user:
+        raise ValueError("FTP: host or user is empty")
+    try:
+        port = int(cfg.get("ftp_port") or "21")
+    except ValueError:
+        port = 21
+    password = cfg.get("ftp_pass") or ""
+    remote_path = (cfg.get("ftp_path") or "/").strip().rstrip("/") or "/"
+    filename = os.path.basename(archive_path)
+    remote_file = f"{remote_path}/{filename}" if remote_path != "/" else filename
+
+    ftp = ftplib.FTP()
+    ftp.connect(host, port, timeout=15)
+    ftp.login(user, password)
+    # Ensure directory exists best-effort
+    if remote_path not in ("", "/"):
+        try:
+            for part in remote_path.strip("/").split("/"):
+                if not part:
+                    continue
+                try:
+                    ftp.mkd(part)
+                except Exception:
+                    pass
+                ftp.cwd(part)
+        except Exception:
+            pass
+    with open(archive_path, "rb") as f:
+        ftp.storbinary(f"STOR {os.path.basename(remote_file)}", f)
+    ftp.quit()
+
+
+def _backup_upload_s3(archive_path: str, cfg: dict) -> None:
+    if not S3_AVAILABLE:
+        raise RuntimeError("boto3 is not installed (S3 unavailable)")
+    bucket = (cfg.get("s3_bucket") or "").strip()
+    key = (cfg.get("s3_key") or "").strip() or os.path.basename(archive_path)
+    region = (cfg.get("s3_region") or "us-east-1").strip()
+    access = (cfg.get("s3_access") or "").strip()
+    secret = (cfg.get("s3_secret") or "").strip()
+    if not bucket or not access or not secret:
+        raise ValueError("S3: bucket or credentials missing")
+
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=access,
+        aws_secret_access_key=secret,
+        region_name=region,
+    )
+    try:
+        s3.upload_file(archive_path, bucket, key)
+    except NoCredentialsError as e:
+        raise RuntimeError(f"S3 credentials error: {e}") from e
+
+
+def _backup_upload_gdrive(archive_path: str, cfg: dict) -> None:
+    """Upload archive to Google Drive folder using a service account."""
+    if not GDRIVE_AVAILABLE:
+        raise RuntimeError("google-api-python-client is not installed (Google Drive unavailable)")
+    folder_id = (cfg.get("gdrive_folder_id") or "").strip()
+    creds_path = (cfg.get("gdrive_creds_path") or "").strip()
+    if not creds_path or not os.path.exists(creds_path):
+        raise ValueError("Google Drive: credentials JSON path is invalid")
+    if not folder_id:
+        raise ValueError("Google Drive: Folder ID is empty")
+
+    scopes = ["https://www.googleapis.com/auth/drive.file"]
+    creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+    service = build("drive", "v3", credentials=creds)
+
+    file_metadata = {
+        "name": os.path.basename(archive_path),
+        "parents": [folder_id],
+    }
+    media = MediaFileUpload(archive_path, mimetype="application/gzip", resumable=False)
+    try:
+        service.files().create(body=file_metadata, media_body=media, fields="id").execute()
+    except HttpError as e:  # type: ignore[name-defined]
+        status = getattr(e, "resp", None).status if getattr(e, "resp", None) else None
+        if status == 404:
+            raise RuntimeError(
+                "Google Drive: folder not found or no access.\n\n"
+                "Check that the Folder ID is correct and the service account has at least Viewer access "
+                "to that folder."
+            ) from e
+        raise RuntimeError(f"Google Drive HTTP error {status or ''}: {e}") from e
 
 
 def parse_server(server: str) -> tuple[str, str, str]:
@@ -967,6 +1163,31 @@ backup_dir_var = tk.StringVar()
 db_vars: dict[str, tk.BooleanVar] = {}
 status_var = tk.StringVar(value="")
 current_connection_name = None  # Track current connection profile name
+
+# Remote backup configuration (HTTP / FTP / S3), similar spirit to Daily Dashboard sync
+remote_backup_enabled_var = tk.BooleanVar(value=False)
+remote_backup_type_var = tk.StringVar(value="http")  # http | ftp | s3 | gdrive
+
+# HTTP
+remote_http_url_var = tk.StringVar(value="")
+
+# FTP
+remote_ftp_host_var = tk.StringVar(value="")
+remote_ftp_port_var = tk.StringVar(value="21")
+remote_ftp_user_var = tk.StringVar(value="")
+remote_ftp_pass_var = tk.StringVar(value="")
+remote_ftp_path_var = tk.StringVar(value="/")
+
+# S3
+remote_s3_bucket_var = tk.StringVar(value="")
+remote_s3_key_var = tk.StringVar(value="taskmask-backup.tar.gz")
+remote_s3_region_var = tk.StringVar(value="us-east-1")
+remote_s3_access_var = tk.StringVar(value="")
+remote_s3_secret_var = tk.StringVar(value="")
+
+# Google Drive
+remote_gdrive_folder_id_var = tk.StringVar(value="")
+remote_gdrive_creds_path_var = tk.StringVar(value="")
 
 padx = 12
 pad_y = 8
@@ -1692,7 +1913,7 @@ def create_dialog(parent, title, width, height, grab=True):
 
 # Connection management buttons
 conn_mgmt_frame = tk.Frame(connect_frame, bg=COLOR_CARD)
-conn_mgmt_frame.pack(fill="x", pady=(10, 0))
+conn_mgmt_frame.pack(pady=(10, 0))
 
 save_conn_btn = tk.Button(
     conn_mgmt_frame,
@@ -1739,9 +1960,9 @@ history_btn = tk.Button(
 )
 history_btn.pack(side="left")
 
-# Button frame
+# Button frame (centered)
 button_frame = tk.Frame(connect_frame, bg=COLOR_CARD)
-button_frame.pack(fill="x", pady=(15, 0))
+button_frame.pack(pady=(15, 0))
 
 test_btn = create_styled_button(
     button_frame,
@@ -1783,22 +2004,22 @@ connection_label = tk.Label(
 )
 connection_label.pack(fill="x")
 
-# Backup folder selection
-folder_card = create_card_frame(backup_frame, padding=15)
-folder_card.pack(fill="x", pady=(0, 15))
+# Backup folder selection (more compact)
+folder_card = create_card_frame(backup_frame, padding=10)
+folder_card.pack(fill="x", pady=(0, 8))
 
 folder_label = tk.Label(
     folder_card,
-    text="📁 Backup Destination:",
-    font=("TkDefaultFont", 10, "bold"),
+    text="📁 Backup Destination",
+    font=("TkDefaultFont", 9, "bold"),
     bg=COLOR_CARD,
     fg=COLOR_TEXT,
     anchor="w",
 )
-folder_label.pack(anchor="w", pady=(0, 8))
+folder_label.pack(anchor="w", pady=(0, 4))
 
 folder_frame = tk.Frame(folder_card, bg=COLOR_CARD)
-folder_frame.pack(fill="x")
+folder_frame.pack(fill="x", pady=(0, 2))
 
 backup_entry = tk.Entry(
     folder_frame,
@@ -1839,13 +2060,380 @@ locations_btn = tk.Button(
 )
 locations_btn.pack(side="left")
 
-# Database selection
-db_card = create_card_frame(backup_frame, title="🗃️  Select Databases", padding=15)
-db_card.pack(fill="both", expand=True, pady=(0, 15))
+# --- Remote backup (optional HTTP/FTP/S3) ---
+remote_card = create_card_frame(backup_frame, title="☁️ Step 3 — Remote Backup (optional)", padding=15)
+remote_card.pack(fill="x", pady=(0, 15))
 
-# Select all/none buttons
+remote_inner = tk.Frame(remote_card, bg=COLOR_CARD)
+remote_inner.pack(fill="both", expand=True, padx=10, pady=(0, 8))
+
+# Top row: enable + helper text
+remote_top = tk.Frame(remote_inner, bg=COLOR_CARD)
+remote_top.pack(fill="x", pady=(0, 4))
+
+remote_enable_chk = tk.Checkbutton(
+    remote_top,
+    text="Enable remote upload after local backup finishes",
+    variable=remote_backup_enabled_var,
+    bg=COLOR_CARD,
+    fg=COLOR_TEXT,
+    selectcolor=COLOR_CARD,
+    activebackground=COLOR_CARD,
+    activeforeground=COLOR_TEXT,
+    font=("TkDefaultFont", 9, "bold"),
+    cursor="hand2",
+)
+remote_enable_chk.pack(anchor="w")
+
+remote_hint = tk.Label(
+    remote_top,
+    text="A compressed archive of each backup run will be uploaded to your selected server.",
+    font=("TkDefaultFont", 8),
+    bg=COLOR_CARD,
+    fg=COLOR_TEXT_LIGHT,
+    anchor="w",
+    justify="left",
+    wraplength=520,
+)
+remote_hint.pack(fill="x", pady=(2, 0))
+
+# Type selection row
+remote_type_frame = tk.Frame(remote_inner, bg=COLOR_CARD)
+remote_type_frame.pack(fill="x", pady=(8, 6))
+
+tk.Label(
+    remote_type_frame,
+    text="Remote type:",
+    font=("TkDefaultFont", 9, "bold"),
+    bg=COLOR_CARD,
+    fg=COLOR_TEXT,
+).pack(side="left")
+
+for label_txt, r_value in [
+    ("HTTP", "http"),
+    ("FTP", "ftp"),
+    ("S3 (S3-compatible)", "s3"),
+    ("Google Drive", "gdrive"),
+]:
+    tk.Radiobutton(
+        remote_type_frame,
+        text=label_txt,
+        value=r_value,
+        variable=remote_backup_type_var,
+        bg=COLOR_CARD,
+        fg=COLOR_TEXT,
+        selectcolor=COLOR_CARD,
+        activebackground=COLOR_CARD,
+        activeforeground=COLOR_TEXT,
+        font=("TkDefaultFont", 9),
+        cursor="hand2",
+    ).pack(side="left", padx=(10, 0))
+
+# Container for per-type settings
+remote_body = tk.Frame(remote_inner, bg=COLOR_CARD)
+remote_body.pack(fill="x", pady=(0, 4))
+
+# HTTP config
+remote_http_frame = tk.Frame(remote_body, bg=COLOR_CARD)
+
+tk.Label(
+    remote_http_frame,
+    text="HTTP POST URL",
+    font=("TkDefaultFont", 9, "bold"),
+    bg=COLOR_CARD,
+    fg=COLOR_TEXT,
+).grid(row=0, column=0, sticky="w", padx=(0, 8), pady=(2, 2))
+
+remote_http_entry = tk.Entry(
+    remote_http_frame,
+    textvariable=remote_http_url_var,
+    font=("TkDefaultFont", 9),
+    relief="solid",
+    borderwidth=1,
+    highlightthickness=1,
+    highlightbackground=COLOR_BORDER,
+    highlightcolor=COLOR_PRIMARY,
+)
+remote_http_entry.grid(row=0, column=1, sticky="ew", pady=(2, 2))
+
+tk.Label(
+    remote_http_frame,
+    text="Example: https://example.com/api/upload-backup",
+    font=("TkDefaultFont", 8),
+    bg=COLOR_CARD,
+    fg=COLOR_TEXT_LIGHT,
+    anchor="w",
+).grid(row=1, column=0, columnspan=2, sticky="w", pady=(0, 2))
+
+remote_http_frame.columnconfigure(1, weight=1)
+
+
+# Helper to create nicely aligned label+entry rows for FTP/S3
+def _remote_add_label_entry(frame, text, var, row, col=0, width=20, show=None):
+    lbl = tk.Label(
+        frame,
+        text=text,
+        font=("TkDefaultFont", 9),
+        bg=COLOR_CARD,
+        fg=COLOR_TEXT,
+        anchor="w",
+    )
+    lbl.grid(row=row, column=col, sticky="w", padx=(0, 4), pady=(2, 2))
+    entry = tk.Entry(
+        frame,
+        textvariable=var,
+        font=("TkDefaultFont", 9),
+        relief="solid",
+        borderwidth=1,
+        highlightthickness=1,
+        highlightbackground=COLOR_BORDER,
+        highlightcolor=COLOR_PRIMARY,
+        width=width,
+        show=show,
+    )
+    entry.grid(row=row, column=col + 1, sticky="w", pady=(2, 2))
+    return entry
+
+
+# FTP config
+remote_ftp_frame = tk.Frame(remote_body, bg=COLOR_CARD)
+_remote_add_label_entry(remote_ftp_frame, "FTP Host:", remote_ftp_host_var, 0, col=0, width=22)
+_remote_add_label_entry(remote_ftp_frame, "Port:", remote_ftp_port_var, 0, col=2, width=6)
+_remote_add_label_entry(remote_ftp_frame, "User:", remote_ftp_user_var, 1, col=0, width=18)
+_remote_add_label_entry(remote_ftp_frame, "Password:", remote_ftp_pass_var, 1, col=2, width=14, show="*")
+_remote_add_label_entry(remote_ftp_frame, "Remote Path:", remote_ftp_path_var, 2, col=0, width=40)
+
+
+# S3 config
+remote_s3_frame = tk.Frame(remote_body, bg=COLOR_CARD)
+_remote_add_label_entry(remote_s3_frame, "S3 Bucket:", remote_s3_bucket_var, 0, col=0, width=20)
+_remote_add_label_entry(remote_s3_frame, "Region:", remote_s3_region_var, 0, col=2, width=12)
+_remote_add_label_entry(remote_s3_frame, "Key (filename):", remote_s3_key_var, 1, col=0, width=30)
+_remote_add_label_entry(remote_s3_frame, "Access Key:", remote_s3_access_var, 2, col=0, width=25)
+_remote_add_label_entry(remote_s3_frame, "Secret Key:", remote_s3_secret_var, 2, col=2, width=25, show="*")
+
+# Google Drive config
+remote_gdrive_frame = tk.Frame(remote_body, bg=COLOR_CARD)
+_remote_add_label_entry(
+    remote_gdrive_frame,
+    "Folder ID:",
+    remote_gdrive_folder_id_var,
+    0,
+    col=0,
+    width=40,
+)
+
+# Helper: choose JSON from mysql_client folder by default
+def _browse_gdrive_creds():
+    try:
+        base_dir = Path(__file__).resolve().parent
+        path = filedialog.askopenfilename(
+            initialdir=str(base_dir),
+            title="Select Google service account JSON",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+        )
+        if path:
+            remote_gdrive_creds_path_var.set(path)
+    except Exception:
+        # Non-fatal; ignore dialog errors
+        pass
+
+_remote_add_label_entry(
+    remote_gdrive_frame,
+    "Service Account JSON:",
+    remote_gdrive_creds_path_var,
+    1,
+    col=0,
+    width=32,
+)
+
+gdrive_browse_btn = tk.Button(
+    remote_gdrive_frame,
+    text="Browse…",
+    command=_browse_gdrive_creds,
+    bg=COLOR_BG,
+    fg=COLOR_TEXT,
+    font=("TkDefaultFont", 8, "bold"),
+    relief="flat",
+    padx=8,
+    pady=2,
+    cursor="hand2",
+    activebackground=COLOR_BORDER,
+)
+gdrive_browse_btn.grid(row=1, column=2, padx=(6, 0), pady=(2, 2), sticky="w")
+
+
+def _update_remote_visibility(*_args):
+    """Show only the settings relevant to the selected remote type."""
+    for f in (remote_http_frame, remote_ftp_frame, remote_s3_frame, remote_gdrive_frame):
+        f.pack_forget()
+    t = remote_backup_type_var.get()
+    if t == "ftp":
+        remote_ftp_frame.pack(fill="x", pady=(0, 2))
+    elif t == "s3":
+        remote_s3_frame.pack(fill="x", pady=(0, 2))
+    elif t == "gdrive":
+        remote_gdrive_frame.pack(fill="x", pady=(0, 2))
+    else:
+        remote_http_frame.pack(fill="x", pady=(0, 2))
+
+
+remote_backup_type_var.trace_add("write", _update_remote_visibility)
+_update_remote_visibility()
+
+# Bottom row: status (left) + test button (right)
+remote_bottom = tk.Frame(remote_inner, bg=COLOR_CARD)
+remote_bottom.pack(fill="x", pady=(6, 0))
+
+remote_status_var = tk.StringVar(value="")
+remote_status_label = tk.Label(
+    remote_bottom,
+    textvariable=remote_status_var,
+    font=("TkDefaultFont", 8),
+    bg=COLOR_CARD,
+    fg=COLOR_TEXT_LIGHT,
+    anchor="w",
+    justify="left",
+)
+remote_status_label.pack(side="left", fill="x", expand=True)
+
+
+def _set_remote_status(msg: str, color: str = COLOR_TEXT_LIGHT):
+    remote_status_var.set(msg)
+    remote_status_label.config(fg=color)
+
+
+def _backup_test_http():
+    url = remote_http_url_var.get().strip()
+    if not url:
+        _set_remote_status("HTTP: URL is empty.", COLOR_DANGER)
+        return
+    try:
+        req = urllib.request.Request(url, method="HEAD")
+        with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310
+            _set_remote_status(f"HTTP OK: {resp.status}", COLOR_SUCCESS)
+    except Exception as e:  # pragma: no cover - network errors
+        _set_remote_status(f"HTTP error: {e}", COLOR_DANGER)
+
+
+def _backup_test_ftp():
+    host = remote_ftp_host_var.get().strip()
+    user = remote_ftp_user_var.get().strip()
+    if not host or not user:
+        _set_remote_status("FTP: Host or user is empty.", COLOR_DANGER)
+        return
+    try:
+        port = int(remote_ftp_port_var.get() or "21")
+    except ValueError:
+        port = 21
+    password = remote_ftp_pass_var.get()
+    try:
+        ftp = ftplib.FTP()
+        ftp.connect(host, port, timeout=5)
+        ftp.login(user, password)
+        cwd = ftp.pwd()
+        ftp.quit()
+        _set_remote_status(f"FTP OK: cwd={cwd}", COLOR_SUCCESS)
+    except Exception as e:  # pragma: no cover
+        _set_remote_status(f"FTP error: {e}", COLOR_DANGER)
+
+
+def _backup_test_s3():
+    if not S3_AVAILABLE:
+        _set_remote_status("S3: boto3 not installed.", COLOR_DANGER)
+        return
+    bucket = remote_s3_bucket_var.get().strip()
+    region = (remote_s3_region_var.get().strip() or "us-east-1")
+    access = remote_s3_access_var.get().strip()
+    secret = remote_s3_secret_var.get().strip()
+    if not bucket or not access or not secret:
+        _set_remote_status("S3: bucket or credentials missing.", COLOR_DANGER)
+        return
+    try:
+        s3 = boto3.client(
+            "s3",
+            aws_access_key_id=access,
+            aws_secret_access_key=secret,
+            region_name=region,
+        )
+        s3.head_bucket(Bucket=bucket)
+        _set_remote_status("S3 OK: bucket reachable.", COLOR_SUCCESS)
+    except Exception as e:  # pragma: no cover
+        _set_remote_status(f"S3 error: {e}", COLOR_DANGER)
+
+
+def _backup_test_gdrive():
+    if not GDRIVE_AVAILABLE:
+        _set_remote_status("Google Drive: google-api-python-client not installed.", COLOR_DANGER)
+        return
+    creds_path = remote_gdrive_creds_path_var.get().strip()
+    folder_id = remote_gdrive_folder_id_var.get().strip()
+    if not creds_path or not os.path.exists(creds_path):
+        _set_remote_status("Google Drive: credentials JSON path is invalid.", COLOR_DANGER)
+        return
+    if not folder_id:
+        _set_remote_status("Google Drive: Folder ID is empty.", COLOR_DANGER)
+        return
+    try:
+        scopes = ["https://www.googleapis.com/auth/drive.file"]
+        creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+        service = build("drive", "v3", credentials=creds)
+        # Simple permission check: try to list one file in the folder
+        q = f"'{folder_id}' in parents and trashed = false"
+        service.files().list(q=q, pageSize=1, fields="files(id)").execute()
+        _set_remote_status("Google Drive OK: able to access folder.", COLOR_SUCCESS)
+    except HttpError as e:  # type: ignore[name-defined]  # pragma: no cover
+        status = getattr(e, "resp", None).status if getattr(e, "resp", None) else None
+        if status == 404:
+            _set_remote_status(
+                "Google Drive: folder not found or no access.\n"
+                "Check Folder ID and share the folder with this service account.",
+                COLOR_DANGER,
+            )
+        else:
+            _set_remote_status(f"Google Drive HTTP error {status or ''}: {e}", COLOR_DANGER)
+    except Exception as e:  # pragma: no cover
+        _set_remote_status(f"Google Drive error: {e}", COLOR_DANGER)
+
+
+def test_remote_backup_connection():
+    if not remote_backup_enabled_var.get():
+        _set_remote_status("Remote backup is currently disabled.", COLOR_TEXT_LIGHT)
+        return
+    _set_remote_status("Testing remote connection...", COLOR_PRIMARY)
+    t = remote_backup_type_var.get()
+    if t == "ftp":
+        _backup_test_ftp()
+    elif t == "s3":
+        _backup_test_s3()
+    elif t == "gdrive":
+        _backup_test_gdrive()
+    else:
+        _backup_test_http()
+
+
+remote_test_btn = tk.Button(
+    remote_bottom,
+    text="Test Remote Connection",
+    command=test_remote_backup_connection,
+    bg=COLOR_TEXT_LIGHT,
+    fg="white",
+    font=("TkDefaultFont", 9, "bold"),
+    relief="flat",
+    padx=10,
+    pady=4,
+    cursor="hand2",
+    activebackground=COLOR_TEXT,
+)
+remote_test_btn.pack(side="right", padx=(8, 0))
+
+# Database selection
+db_card = create_card_frame(backup_frame, title="🗃️  Select Databases", padding=10)
+db_card.pack(fill="both", expand=True, pady=(0, 10))
+
+# Select all/none buttons (compact)
 select_frame = tk.Frame(db_card, bg=COLOR_CARD)
-select_frame.pack(fill="x", pady=(0, 10))
+select_frame.pack(fill="x", pady=(0, 4))
 
 def select_all_databases():
     """Select all databases."""
@@ -1889,7 +2477,7 @@ deselect_all_btn.pack(side="left")
 
 # Scrollable database list
 db_list_container = tk.Frame(db_card, bg=COLOR_CARD)
-db_list_container.pack(fill="both", expand=True)
+db_list_container.pack(fill="both", expand=True, pady=(0, 2))
 
 # Canvas and scrollbar for database list
 db_canvas = tk.Canvas(
@@ -1953,7 +2541,7 @@ btn_backup = create_styled_button(
     hover_color=COLOR_SECONDARY_HOVER,
     width=30,
 )
-btn_backup.pack()
+btn_backup.pack(anchor="center")
 
 # --- Loading spinner / status area (hidden by default, shown via set_busy) ---
 progress_frame = tk.Frame(root, bg=COLOR_BG, relief="flat", borderwidth=1)
@@ -2000,18 +2588,48 @@ def auto_load_settings():
     if default_location and os.path.exists(default_location):
         backup_dir_var.set(default_location)
     
-    # Optionally load last used connection (commented out by default)
-    # Uncomment if you want to auto-load last connection
-    # last_connections = db_manager.get_connections(favorites_only=True)
-    # if last_connections:
-    #     conn = last_connections[0]
-    #     if conn['socket_path']:
-    #         server_var.set(conn['socket_path'])
-    #     else:
-    #         server_var.set(conn['host'] or "localhost")
-    #         port_override_var.set(conn['port'] or "3306")
-    #     user_var.set(conn['username'])
-    #     password_var.set(conn['password'])
+    # Load last-used connection (auto-saved in settings table)
+    try:
+        raw = db_manager.get_setting("last_connection_json")
+        if raw:
+            data = json.loads(raw)
+            server_var.set(str(data.get("server", "") or "localhost"))
+            port_override_var.set(str(data.get("port_override", "") or ""))
+            user_var.set(str(data.get("user", "") or "root"))
+            password_var.set(str(data.get("password", "") or ""))
+    except Exception:
+        # Non-fatal; ignore if settings load fails
+        pass
+
+    # Load last remote backup configuration
+    try:
+        raw_remote = db_manager.get_setting("remote_backup_json")
+        if raw_remote:
+            rdata = json.loads(raw_remote)
+            remote_backup_enabled_var.set(bool(rdata.get("enabled", False)))
+            remote_backup_type_var.set(str(rdata.get("type", "http") or "http"))
+            # HTTP
+            remote_http_url_var.set(str(rdata.get("http_url", "") or ""))
+            # FTP
+            remote_ftp_host_var.set(str(rdata.get("ftp_host", "") or ""))
+            remote_ftp_port_var.set(str(rdata.get("ftp_port", "") or "21"))
+            remote_ftp_user_var.set(str(rdata.get("ftp_user", "") or ""))
+            remote_ftp_pass_var.set(str(rdata.get("ftp_pass", "") or ""))
+            remote_ftp_path_var.set(str(rdata.get("ftp_path", "") or "/"))
+            # S3
+            remote_s3_bucket_var.set(str(rdata.get("s3_bucket", "") or ""))
+            remote_s3_key_var.set(str(rdata.get("s3_key", "") or "taskmask-backup.tar.gz"))
+            remote_s3_region_var.set(str(rdata.get("s3_region", "") or "us-east-1"))
+            remote_s3_access_var.set(str(rdata.get("s3_access", "") or ""))
+            remote_s3_secret_var.set(str(rdata.get("s3_secret", "") or ""))
+            # Google Drive
+            remote_gdrive_folder_id_var.set(str(rdata.get("gdrive_folder_id", "") or ""))
+            remote_gdrive_creds_path_var.set(str(rdata.get("gdrive_creds_path", "") or ""))
+            # Apply correct visibility for restored type
+            _update_remote_visibility()
+    except Exception:
+        # Non-fatal; ignore if settings load fails
+        pass
 
 # Initialize settings
 root.after(100, auto_load_settings)

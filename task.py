@@ -1798,7 +1798,7 @@ apply_theme()
 # ----------- MENU BAR -----------
 def backup_database():
     try:
-        default_name = f"sweethart-backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}.db"
+        default_name = f"taskmask-backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}.db"
         path = filedialog.asksaveasfilename(
             title="Backup Database",
             defaultextension=".db",
