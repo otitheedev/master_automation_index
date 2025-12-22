@@ -54,7 +54,7 @@ DEFAULT_SETTINGS = {
     "sync_ftp_path": "/",
     # S3 settings
     "sync_s3_bucket": "",
-    "sync_s3_key": "sweethart.db",
+    "sync_s3_key": "taskmask.db",
     "sync_s3_region": "us-east-1",
     "sync_s3_access_key": "",
     "sync_s3_secret_key": "",
@@ -133,7 +133,7 @@ def sync_ftp() -> str:
     if not host or not user:
         return "FTP sync: missing host or username"
     
-    remote_file = f"{remote_path}/sweethart.db"
+    remote_file = f"{remote_path}/taskmask.db"
     local_exists = os.path.exists(DB_NAME)
     local_mtime = os.path.getmtime(DB_NAME) if local_exists else 0
     local_sha = sha256_file(DB_NAME) if local_exists else ""
@@ -218,7 +218,7 @@ def sync_s3() -> str:
         return "S3 sync: boto3 not installed. Run: pip install boto3"
     
     bucket = (settings.get("sync_s3_bucket") or "").strip()
-    key = (settings.get("sync_s3_key") or "sweethart.db").strip()
+    key = (settings.get("sync_s3_key") or "taskmask.db").strip()
     region = (settings.get("sync_s3_region") or "us-east-1").strip()
     access_key = (settings.get("sync_s3_access_key") or "").strip()
     secret_key = (settings.get("sync_s3_secret_key") or "").strip()
@@ -427,22 +427,22 @@ def get_db_path() -> str:
     """
     DB location strategy:
     - If a 'portable.txt' file exists next to task.py, keep DB in ./database (portable mode).
-    - Otherwise use %APPDATA%\\DailyDashboard\\database\\sweethart.db
+    - Otherwise use %APPDATA%\\DailyDashboard\\database\\taskmask.db
     - One-time migration from legacy hardcoded folder if present.
     """
     portable_flag = os.path.join(os.getcwd(), "portable.txt")
     if os.path.exists(portable_flag):
         db_dir = os.path.join(os.getcwd(), "database")
         os.makedirs(db_dir, exist_ok=True)
-        return os.path.join(db_dir, "sweethart.db")
+        return os.path.join(db_dir, "taskmask.db")
 
     app_dir = get_app_data_dir()
     db_dir = os.path.join(app_dir, "database")
     os.makedirs(db_dir, exist_ok=True)
-    new_db = os.path.join(db_dir, "sweethart.db")
+    new_db = os.path.join(db_dir, "taskmask.db")
 
     # Legacy migration (old hardcoded path)
-    legacy_db = os.path.join(r"C:\YAMiN\database", "sweethart.db")
+    legacy_db = os.path.join(r"C:\YAMiN\database", "taskmask.db")
     try:
         if not os.path.exists(new_db) and os.path.exists(legacy_db):
             shutil.copy2(legacy_db, new_db)
@@ -933,6 +933,8 @@ def add_timer_window(selected_uuid: str | None = None):
         return
     
     timer_window = tk.Toplevel(root)
+    # Create hidden first to avoid visible "jump" animation, then center and show
+    timer_window.withdraw()
     timer_window.title("Set Deadline")
     timer_window.config(bg="#f5f7fa")
     timer_window.resizable(False, False)
@@ -942,6 +944,7 @@ def add_timer_window(selected_uuid: str | None = None):
     
     # Center window relative to main window
     center_window_relative_to_parent(timer_window, 500, 600)
+    timer_window.deiconify()
     
     # Make modal
     timer_window.transient(root)
@@ -1280,6 +1283,8 @@ def on_todo_key(event):
 
 def add_link_window():
     link_window = tk.Toplevel(root)
+    # Create hidden first to avoid visible "jump" animation, then center and show
+    link_window.withdraw()
     link_window.title("Add New Link")
     link_window.config(bg="#f5f7fa")
     link_window.resizable(False, False)
@@ -1289,6 +1294,7 @@ def add_link_window():
     
     # Center window relative to main window
     center_window_relative_to_parent(link_window, 480, 450)
+    link_window.deiconify()
     
     # Make modal
     link_window.transient(root)
@@ -1417,6 +1423,8 @@ def delete_and_refresh_link(link_id):
 
 def add_note_window():
     note_window = tk.Toplevel(root)
+    # Create hidden first to avoid visible "jump" animation, then center and show
+    note_window.withdraw()
     note_window.title("Add New Note")
     note_window.config(bg="white")
     note_window.resizable(False, False)
@@ -1426,6 +1434,7 @@ def add_note_window():
     
     # Center window relative to main window
     center_window_relative_to_parent(note_window, 600, 500)
+    note_window.deiconify()
     
     # Make modal
     note_window.transient(root)
@@ -1480,6 +1489,8 @@ def edit_note_window(note_id):
         return
     
     edit_window = tk.Toplevel(root)
+    # Create hidden first to avoid visible "jump" animation, then center and show
+    edit_window.withdraw()
     edit_window.title("Edit Note")
     edit_window.config(bg="#f5f7fa")
     edit_window.resizable(False, False)
@@ -1489,6 +1500,7 @@ def edit_note_window(note_id):
     
     # Center window relative to main window - make it taller with scrollability
     center_window_relative_to_parent(edit_window, 700, 800)
+    edit_window.deiconify()
     
     # Make modal
     edit_window.transient(root)
@@ -1674,6 +1686,8 @@ def view_note(event):
         for note in notes:
             if note[0] == note_id:
                 view_window = tk.Toplevel(root)
+                # Create hidden first to avoid visible "jump" animation, then center and show
+                view_window.withdraw()
                 view_window.title(note[1])
                 view_window.config(bg="white")
                 view_window.resizable(False, False)
@@ -1683,6 +1697,7 @@ def view_note(event):
                 
                 # Center window relative to main window
                 center_window_relative_to_parent(view_window, 600, 400)
+                view_window.deiconify()
                 
                 # Make modal
                 view_window.transient(root)
@@ -1823,6 +1838,8 @@ def restore_database():
 
 def open_settings_window():
     win = tk.Toplevel(root)
+    # Create hidden first to avoid visible "jump" animation, then center and show
+    win.withdraw()
     win.title("Settings")
     win.config(bg="white")
     win.resizable(False, False)
@@ -1830,6 +1847,7 @@ def open_settings_window():
     
     # Center window relative to main window - increased height for new fields
     center_window_relative_to_parent(win, 580, 750)
+    win.deiconify()
     
     # Make modal
     win.transient(root)
@@ -1944,7 +1962,7 @@ def open_settings_window():
     tk.Entry(s3_frame, textvariable=s3_bucket_var).grid(row=0, column=1, sticky="ew", padx=(10, 0), pady=(0, 4))
 
     tk.Label(s3_frame, text="S3 Key (filename):", bg="white").grid(row=1, column=0, sticky="w", pady=(0, 4))
-    s3_key_var = tk.StringVar(value=settings.get("sync_s3_key", "sweethart.db"))
+    s3_key_var = tk.StringVar(value=settings.get("sync_s3_key", "taskmask.db"))
     tk.Entry(s3_frame, textvariable=s3_key_var).grid(row=1, column=1, sticky="ew", padx=(10, 0), pady=(0, 4))
 
     tk.Label(s3_frame, text="S3 Region:", bg="white").grid(row=2, column=0, sticky="w", pady=(0, 4))
@@ -1966,6 +1984,105 @@ def open_settings_window():
     tk.Entry(sync_frame, textvariable=interval_var, width=10).grid(row=5, column=1, sticky="w", padx=(10, 0), pady=(8, 0))
 
     sync_frame.columnconfigure(1, weight=1)
+
+    # Connection test status label
+    test_status_var = tk.StringVar(value="")
+    test_status_label = tk.Label(sync_frame, textvariable=test_status_var, bg="white",
+                                 fg="#555", font=("Segoe UI", 9))
+    test_status_label.grid(row=7, column=0, columnspan=2, sticky="w", pady=(4, 0))
+
+    def _set_test_status(msg: str, color: str = "#198754"):
+        """Update small status text inside Settings sync section."""
+        test_status_var.set(msg)
+        test_status_label.config(fg=color)
+
+    def _test_http_connection():
+        url = url_var.get().strip()
+        if not url:
+            _set_test_status("HTTP: Server URL is empty.", "#dc3545")
+            return
+        user = (user_var.get().strip() or "default")
+        token = token_var.get().strip()
+        headers = {}
+        if token:
+            headers["X-Token"] = token
+        try:
+            meta_url = _join_url(url, "/api/meta", {"user": user})
+            resp = http_get_json(meta_url, headers=headers, timeout=5)
+            # Show compact response summary
+            exists = resp.get("exists", None)
+            _set_test_status(f"HTTP OK: meta exists={exists}", "#198754")
+        except Exception as e:
+            _set_test_status(f"HTTP error: {e}", "#dc3545")
+
+    def _test_ftp_connection():
+        host = ftp_host_var.get().strip()
+        user = ftp_user_var.get().strip()
+        if not host or not user:
+            _set_test_status("FTP: Host or user is empty.", "#dc3545")
+            return
+        try:
+            port = int(ftp_port_var.get() or 21)
+        except ValueError:
+            port = 21
+        password = ftp_pass_var.get()
+        try:
+            ftp = ftplib.FTP()
+            ftp.connect(host, port, timeout=5)
+            ftp.login(user, password)
+            cwd = ftp.pwd()
+            ftp.quit()
+            _set_test_status(f"FTP OK: connected (cwd: {cwd})", "#198754")
+        except Exception as e:
+            _set_test_status(f"FTP error: {e}", "#dc3545")
+
+    def _test_s3_connection():
+        if not S3_AVAILABLE:
+            _set_test_status("S3: boto3 not installed.", "#dc3545")
+            return
+        bucket = s3_bucket_var.get().strip()
+        region = (s3_region_var.get().strip() or "us-east-1")
+        access_key = s3_access_var.get().strip()
+        secret_key = s3_secret_var.get().strip()
+        if not bucket or not access_key or not secret_key:
+            _set_test_status("S3: bucket or credentials missing.", "#dc3545")
+            return
+        try:
+            s3 = boto3.client(
+                "s3",
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+                region_name=region,
+            )
+            # Cheap check: does bucket exist / is it reachable?
+            s3.head_bucket(Bucket=bucket)
+            _set_test_status("S3 OK: bucket reachable.", "#198754")
+        except Exception as e:
+            _set_test_status(f"S3 error: {e}", "#dc3545")
+
+    def test_connection():
+        """Test connection for the currently selected sync type without changing any data."""
+        _set_test_status("Testing connection...", "#0d6efd")
+        sync_type = sync_type_var.get()
+        if sync_type == "http":
+            _test_http_connection()
+        elif sync_type == "ftp":
+            _test_ftp_connection()
+        else:  # s3
+            _test_s3_connection()
+
+    # Test Connection button
+    test_btn = tk.Button(
+        sync_frame,
+        text="Test Connection",
+        command=test_connection,
+        bg="#0d6efd",
+        fg="white",
+        font=("Segoe UI", 9, "bold"),
+        padx=10,
+        pady=4,
+    )
+    test_btn.grid(row=6, column=1, sticky="e", pady=(8, 0))
 
     def update_sync_fields():
         sync_type = sync_type_var.get()
@@ -2004,7 +2121,7 @@ def open_settings_window():
         settings["sync_ftp_pass"] = ftp_pass_var.get().strip()
         settings["sync_ftp_path"] = ftp_path_var.get().strip() or "/"
         settings["sync_s3_bucket"] = s3_bucket_var.get().strip()
-        settings["sync_s3_key"] = s3_key_var.get().strip() or "sweethart.db"
+        settings["sync_s3_key"] = s3_key_var.get().strip() or "taskmask.db"
         settings["sync_s3_region"] = s3_region_var.get().strip() or "us-east-1"
         settings["sync_s3_access_key"] = s3_access_var.get().strip()
         settings["sync_s3_secret_key"] = s3_secret_var.get().strip()
@@ -2361,6 +2478,29 @@ todo_tree.configure(yscrollcommand=todo_tree_scroll.set)
 todo_tree_scroll.pack(side="right", fill="y")
 todo_tree.pack(side="left", fill="both", expand=True)
 
+# Ensure row highlight disappears when focus moves away from the to-do list
+def _todo_tree_on_focus_out(event):
+    """
+    When the Treeview loses focus (user clicks somewhere else),
+    clear the visual selection so the highlight background disappears.
+    """
+    try:
+        sel = todo_tree.selection()
+        if sel:
+            todo_tree.selection_remove(sel)
+    except Exception:
+        pass
+
+def _todo_tree_on_focus_in(event):
+    """
+    Placeholder for future focus-in styling if needed.
+    Currently does nothing but kept for symmetry / easy extension.
+    """
+    return
+
+todo_tree.bind("<FocusOut>", _todo_tree_on_focus_out)
+todo_tree.bind("<FocusIn>", _todo_tree_on_focus_in)
+
 todo_tree.bind("<Double-Button-1>", lambda e: toggle_task())
 todo_tree.bind("<KeyPress-Return>", on_todo_key)
 todo_tree.bind("<KeyPress-Delete>", on_todo_key)
@@ -2381,6 +2521,8 @@ def edit_selected_task():
     
     # Create edit window
     edit_window = tk.Toplevel(root)
+    # Create hidden first to avoid visible "jump" animation, then center and show
+    edit_window.withdraw()
     edit_window.title("Edit Task - Detailed")
     edit_window.config(bg="#f5f7fa")
     edit_window.resizable(False, False)
@@ -2390,6 +2532,7 @@ def edit_selected_task():
     
     # Center window relative to main window - make it bigger and taller
     center_window_relative_to_parent(edit_window, 750, 1000)
+    edit_window.deiconify()
     
     # Make modal
     edit_window.transient(root)
