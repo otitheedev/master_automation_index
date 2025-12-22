@@ -19,6 +19,8 @@ A comprehensive Python application for daily task management with integrated aut
 - Save and manage multiple connection presets
 - Backup history tracking
 - Secure credential storage with SQLite
+- **Remote Backup Options**: HTTP, FTP, S3, or Google Drive (OAuth2)
+- Automatic credential persistence and auto-load on startup
 - Cross-platform support (Linux/Windows)
 
 #### Otithee Automation Suite
@@ -112,10 +114,12 @@ All automation tools feature:
 ## 🔧 Configuration
 
 ### Database
-- Main dashboard DB file: **`taskmask.db`** (used by all dashboard features)
-- Default location (Windows): `%APPDATA%\DailyDashboard\database\taskmask.db`
-- Default location (Linux): `~/DailyDashboard/database/taskmask.db`
-- Portable mode: Create `portable.txt` next to `task.py` to use `./database/taskmask.db`
+- **Main dashboard DB file**: **`taskmask.db`** (used by all dashboard features)
+  - Default location (Windows): `%APPDATA%\DailyDashboard\database\taskmask.db`
+  - Default location (Linux): `~/DailyDashboard/database/taskmask.db`
+  - Portable mode: Create `portable.txt` next to `task.py` to use `./database/taskmask.db`
+- **MySQL Backup Tool DB file**: **`backup_tool.db`** (stored in `mysql_client/` folder)
+  - Contains: saved connections, backup locations, backup history, and OAuth2 tokens
 
 ### Cloud Sync (Optional)
 Configure in **Tools → Settings**:
@@ -123,12 +127,31 @@ Configure in **Tools → Settings**:
 - **FTP Sync**: FTP server synchronization
 - **S3 Sync**: Amazon S3 or S3-compatible storage
 
+### MySQL Backup Remote Storage
+Configure in **MySQL Backup Tool → Step 3 — Remote Backup**:
+- **HTTP**: Upload backup archives to custom HTTP endpoint
+- **FTP**: Upload to FTP server
+- **S3**: Upload to Amazon S3 or S3-compatible storage
+- **Google Drive**: Upload to your personal Google Drive using OAuth2
+
+#### Google Drive Setup (OAuth2)
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create or select a project
+3. Enable **Google Drive API**
+4. Go to **Credentials** → **Create Credentials** → **OAuth client ID**
+5. Choose **Desktop app** as application type
+6. Download the JSON file and save it as `client_secrets.json` in the `mysql_client/` folder
+7. In the MySQL Backup Tool, click **"🔐 Authorize Google Drive"** to complete OAuth2 flow
+
 ## 📋 Dependencies
 
 See `requirements.txt` for complete list. Key dependencies:
 - `pytz` - Timezone handling
 - `playsound` - Sound playback
-- `boto3` - S3 sync support
+- `boto3` - S3 sync support (dashboard sync + MySQL backup)
+- `google-api-python-client` - Google Drive API (MySQL backup remote storage)
+- `google-auth` - Google authentication (OAuth2)
+- `google-auth-oauthlib` - OAuth2 flow support
 - `pandas` - Data processing
 - `selenium` - Browser automation
 - `playwright` - Advanced browser automation
@@ -137,6 +160,9 @@ See `requirements.txt` for complete list. Key dependencies:
 
 ## 🆕 Recent Updates
 
+- ✨ **MySQL Backup Remote Storage**: HTTP, FTP, S3, and Google Drive (OAuth2) support for automatic backup uploads
+- ✨ **Google Drive OAuth2**: Personal Google Drive integration with browser-based authorization flow
+- ✨ **Auto-Save Credentials**: MySQL backup tool automatically remembers connection and remote backup settings
 - ✨ **Integrated Automation Tools**: MySQL Backup, Otithee Automation, and OSSL Automation suites
 - ✨ **Editable Credentials**: All automation tools now feature GUI-based credential management
 - ✨ **Smart File Dialogs**: CSV/Excel file dialogs automatically open in each tool's directory

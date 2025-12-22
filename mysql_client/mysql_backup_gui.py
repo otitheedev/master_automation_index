@@ -57,12 +57,14 @@ try:
 except Exception:  # pragma: no cover - best-effort import
     S3_AVAILABLE = False
 
-# Optional Google Drive support (service account)
+# Optional Google Drive support (OAuth2 user credentials)
 try:
     from googleapiclient.discovery import build  # type: ignore
     from googleapiclient.http import MediaFileUpload  # type: ignore
     from googleapiclient.errors import HttpError  # type: ignore
-    from google.oauth2.service_account import Credentials  # type: ignore
+    from google.oauth2.credentials import Credentials  # type: ignore
+    from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
+    from google.auth.transport.requests import Request  # type: ignore
 
     GDRIVE_AVAILABLE = True
 except Exception:  # pragma: no cover - best-effort import
@@ -406,9 +408,55 @@ class DatabaseManager:
         cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, value))
         conn.commit()
         conn.close()
+    
+    def get_gdrive_token(self):
+        """Get stored Google Drive OAuth2 token (as JSON string)."""
+        return self.get_setting("gdrive_token_json")
+    
+    def save_gdrive_token(self, token_json):
+        """Save Google Drive OAuth2 token (as JSON string)."""
+        self.set_setting("gdrive_token_json", token_json)
 
 # Initialize database manager
 db_manager = DatabaseManager()
+
+# Google Drive OAuth2 helpers
+def get_gdrive_credentials():
+    """Get valid Google Drive OAuth2 credentials, refreshing if needed."""
+    if not GDRIVE_AVAILABLE:
+        raise RuntimeError("google-api-python-client is not installed")
+    
+    SCOPES = ["https://www.googleapis.com/auth/drive"]
+    token_json = db_manager.get_gdrive_token()
+    
+    creds = None
+    if token_json:
+        try:
+            token_dict = json.loads(token_json)
+            creds = Credentials.from_authorized_user_info(token_dict, SCOPES)
+        except Exception:
+            pass
+    
+    # If there are no (valid) credentials available, return None (user needs to authorize)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            try:
+                creds.refresh(Request())
+                # Save refreshed token
+                db_manager.save_gdrive_token(json.dumps({
+                    "token": creds.token,
+                    "refresh_token": creds.refresh_token,
+                    "token_uri": creds.token_uri,
+                    "client_id": creds.client_id,
+                    "client_secret": creds.client_secret,
+                    "scopes": creds.scopes,
+                }))
+            except Exception:
+                return None
+        else:
+            return None
+    
+    return creds
 
 def create_tooltip(widget, text):
     """Create a tooltip for a widget."""
@@ -611,7 +659,13 @@ def _connect_worker(host: str, port: str, sock: str, user: str, password: str):
 
     db_names = [line.strip() for line in lines[1:] if line.strip()]
     # Skip system databases that are not meant to be dumped or often restricted
-    skip_dbs = {"information_schema", "performance_schema"}
+    # Exclude MySQL core system databases: sys, mysql, information_schema, performance_schema
+    skip_dbs = {
+        "information_schema",
+        "performance_schema",
+        "sys",
+        "mysql",
+    }
     db_names = [name for name in db_names if name not in skip_dbs]
     if not db_names:
         def _no_db2():
@@ -959,9 +1013,8 @@ def backup_selected_databases():
         "s3_region": remote_s3_region_var.get().strip(),
         "s3_access": remote_s3_access_var.get().strip(),
         "s3_secret": remote_s3_secret_var.get().strip(),
-        # Google Drive
+        # Google Drive (OAuth2 - token stored separately in DB)
         "gdrive_folder_id": remote_gdrive_folder_id_var.get().strip(),
-        "gdrive_creds_path": remote_gdrive_creds_path_var.get().strip(),
     }
 
     # Persist remote backup configuration so it is remembered next time
@@ -1077,18 +1130,19 @@ def _backup_upload_s3(archive_path: str, cfg: dict) -> None:
 
 
 def _backup_upload_gdrive(archive_path: str, cfg: dict) -> None:
-    """Upload archive to Google Drive folder using a service account."""
+    """Upload archive to Google Drive folder using OAuth2 user credentials."""
     if not GDRIVE_AVAILABLE:
         raise RuntimeError("google-api-python-client is not installed (Google Drive unavailable)")
     folder_id = (cfg.get("gdrive_folder_id") or "").strip()
-    creds_path = (cfg.get("gdrive_creds_path") or "").strip()
-    if not creds_path or not os.path.exists(creds_path):
-        raise ValueError("Google Drive: credentials JSON path is invalid")
     if not folder_id:
         raise ValueError("Google Drive: Folder ID is empty")
-
-    scopes = ["https://www.googleapis.com/auth/drive.file"]
-    creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+    
+    creds = get_gdrive_credentials()
+    if not creds:
+        raise RuntimeError(
+            "Google Drive: Not authorized. Please click 'Authorize Google Drive' in the settings."
+        )
+    
     service = build("drive", "v3", credentials=creds)
 
     file_metadata = {
@@ -1103,8 +1157,7 @@ def _backup_upload_gdrive(archive_path: str, cfg: dict) -> None:
         if status == 404:
             raise RuntimeError(
                 "Google Drive: folder not found or no access.\n\n"
-                "Check that the Folder ID is correct and the service account has at least Viewer access "
-                "to that folder."
+                "Check that the Folder ID is correct."
             ) from e
         raise RuntimeError(f"Google Drive HTTP error {status or ''}: {e}") from e
 
@@ -1185,9 +1238,8 @@ remote_s3_region_var = tk.StringVar(value="us-east-1")
 remote_s3_access_var = tk.StringVar(value="")
 remote_s3_secret_var = tk.StringVar(value="")
 
-# Google Drive
+# Google Drive (OAuth2 - no creds_path needed, uses client_secrets.json + stored token)
 remote_gdrive_folder_id_var = tk.StringVar(value="")
-remote_gdrive_creds_path_var = tk.StringVar(value="")
 
 padx = 12
 pad_y = 8
@@ -2214,53 +2266,125 @@ _remote_add_label_entry(remote_s3_frame, "Secret Key:", remote_s3_secret_var, 2,
 
 # Google Drive config
 remote_gdrive_frame = tk.Frame(remote_body, bg=COLOR_CARD)
-_remote_add_label_entry(
+
+tk.Label(
     remote_gdrive_frame,
-    "Folder ID:",
-    remote_gdrive_folder_id_var,
-    0,
-    col=0,
+    text="Folder ID:",
+    font=("TkDefaultFont", 9),
+    bg=COLOR_CARD,
+    fg=COLOR_TEXT,
+    anchor="w",
+).grid(row=0, column=0, sticky="w", padx=(0, 4), pady=(2, 2))
+
+remote_gdrive_folder_entry = tk.Entry(
+    remote_gdrive_frame,
+    textvariable=remote_gdrive_folder_id_var,
+    font=("TkDefaultFont", 9),
+    relief="solid",
+    borderwidth=1,
+    highlightthickness=1,
+    highlightbackground=COLOR_BORDER,
+    highlightcolor=COLOR_PRIMARY,
     width=40,
 )
+remote_gdrive_folder_entry.grid(row=0, column=1, sticky="w", pady=(2, 2))
 
-# Helper: choose JSON from mysql_client folder by default
-def _browse_gdrive_creds():
-    try:
-        base_dir = Path(__file__).resolve().parent
-        path = filedialog.askopenfilename(
-            initialdir=str(base_dir),
-            title="Select Google service account JSON",
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+# OAuth2 authorization status and button
+gdrive_auth_status_var = tk.StringVar(value="Not authorized")
+gdrive_auth_status_label = tk.Label(
+    remote_gdrive_frame,
+    textvariable=gdrive_auth_status_var,
+    font=("TkDefaultFont", 8),
+    bg=COLOR_CARD,
+    fg=COLOR_TEXT_LIGHT,
+    anchor="w",
+)
+gdrive_auth_status_label.grid(row=1, column=0, columnspan=2, sticky="w", pady=(4, 2))
+
+def _authorize_gdrive():
+    """Start OAuth2 flow for Google Drive authorization."""
+    if not GDRIVE_AVAILABLE:
+        messagebox.showerror(
+            "Error",
+            "google-api-python-client is not installed.\n\n"
+            "Install it with: pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib"
         )
-        if path:
-            remote_gdrive_creds_path_var.set(path)
-    except Exception:
-        # Non-fatal; ignore dialog errors
-        pass
+        return
+    
+    # Check if client_secrets.json exists (OAuth2 client credentials)
+    script_dir = Path(__file__).resolve().parent
+    client_secrets_path = script_dir / "client_secrets.json"
+    
+    if not client_secrets_path.exists():
+        messagebox.showerror(
+            "OAuth2 Client Credentials Missing",
+            f"To use Google Drive with OAuth2, you need a 'client_secrets.json' file.\n\n"
+            f"Expected location: {client_secrets_path}\n\n"
+            f"To get this file:\n"
+            f"1. Go to https://console.cloud.google.com/\n"
+            f"2. Create/select a project\n"
+            f"3. Enable 'Google Drive API'\n"
+            f"4. Go to 'Credentials' → 'Create Credentials' → 'OAuth client ID'\n"
+            f"5. Choose 'Desktop app'\n"
+            f"6. Download the JSON and save it as 'client_secrets.json' in:\n"
+            f"   {script_dir}\n\n"
+            f"Then click 'Authorize' again."
+        )
+        return
+    
+    SCOPES = ["https://www.googleapis.com/auth/drive"]
+    
+    try:
+        flow = InstalledAppFlow.from_client_secrets_file(str(client_secrets_path), SCOPES)
+        # This will open a browser window for user authorization
+        creds = flow.run_local_server(port=0)
+        
+        # Save credentials
+        token_dict = {
+            "token": creds.token,
+            "refresh_token": creds.refresh_token,
+            "token_uri": creds.token_uri,
+            "client_id": creds.client_id,
+            "client_secret": creds.client_secret,
+            "scopes": creds.scopes,
+        }
+        db_manager.save_gdrive_token(json.dumps(token_dict))
+        
+        # Update status
+        gdrive_auth_status_var.set("✓ Authorized")
+        gdrive_auth_status_label.config(fg=COLOR_SUCCESS)
+        messagebox.showinfo("Success", "Google Drive authorization successful!")
+    except Exception as e:
+        messagebox.showerror("Authorization Failed", f"Failed to authorize Google Drive:\n{e}")
 
-_remote_add_label_entry(
+gdrive_auth_btn = tk.Button(
     remote_gdrive_frame,
-    "Service Account JSON:",
-    remote_gdrive_creds_path_var,
-    1,
-    col=0,
-    width=32,
-)
-
-gdrive_browse_btn = tk.Button(
-    remote_gdrive_frame,
-    text="Browse…",
-    command=_browse_gdrive_creds,
-    bg=COLOR_BG,
-    fg=COLOR_TEXT,
-    font=("TkDefaultFont", 8, "bold"),
+    text="🔐 Authorize Google Drive",
+    command=_authorize_gdrive,
+    bg=COLOR_PRIMARY,
+    fg="white",
+    font=("TkDefaultFont", 9, "bold"),
     relief="flat",
-    padx=8,
-    pady=2,
+    padx=12,
+    pady=6,
     cursor="hand2",
-    activebackground=COLOR_BORDER,
+    activebackground=COLOR_PRIMARY_HOVER,
 )
-gdrive_browse_btn.grid(row=1, column=2, padx=(6, 0), pady=(2, 2), sticky="w")
+gdrive_auth_btn.grid(row=2, column=0, columnspan=2, pady=(4, 2), sticky="w")
+
+# Update auth status on startup
+def _update_gdrive_auth_status():
+    try:
+        creds = get_gdrive_credentials()
+        if creds:
+            gdrive_auth_status_var.set("✓ Authorized")
+            gdrive_auth_status_label.config(fg=COLOR_SUCCESS)
+        else:
+            gdrive_auth_status_var.set("Not authorized")
+            gdrive_auth_status_label.config(fg=COLOR_TEXT_LIGHT)
+    except Exception:
+        gdrive_auth_status_var.set("Not authorized")
+        gdrive_auth_status_label.config(fg=COLOR_TEXT_LIGHT)
 
 
 def _update_remote_visibility(*_args):
@@ -2366,17 +2490,18 @@ def _backup_test_gdrive():
     if not GDRIVE_AVAILABLE:
         _set_remote_status("Google Drive: google-api-python-client not installed.", COLOR_DANGER)
         return
-    creds_path = remote_gdrive_creds_path_var.get().strip()
     folder_id = remote_gdrive_folder_id_var.get().strip()
-    if not creds_path or not os.path.exists(creds_path):
-        _set_remote_status("Google Drive: credentials JSON path is invalid.", COLOR_DANGER)
-        return
     if not folder_id:
         _set_remote_status("Google Drive: Folder ID is empty.", COLOR_DANGER)
         return
     try:
-        scopes = ["https://www.googleapis.com/auth/drive.file"]
-        creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+        creds = get_gdrive_credentials()
+        if not creds:
+            _set_remote_status(
+                "Google Drive: Not authorized. Click 'Authorize Google Drive' first.",
+                COLOR_DANGER,
+            )
+            return
         service = build("drive", "v3", credentials=creds)
         # Simple permission check: try to list one file in the folder
         q = f"'{folder_id}' in parents and trashed = false"
@@ -2386,8 +2511,7 @@ def _backup_test_gdrive():
         status = getattr(e, "resp", None).status if getattr(e, "resp", None) else None
         if status == 404:
             _set_remote_status(
-                "Google Drive: folder not found or no access.\n"
-                "Check Folder ID and share the folder with this service account.",
+                "Google Drive: folder not found or no access. Check Folder ID.",
                 COLOR_DANGER,
             )
         else:
@@ -2624,15 +2748,18 @@ def auto_load_settings():
             remote_s3_secret_var.set(str(rdata.get("s3_secret", "") or ""))
             # Google Drive
             remote_gdrive_folder_id_var.set(str(rdata.get("gdrive_folder_id", "") or ""))
-            remote_gdrive_creds_path_var.set(str(rdata.get("gdrive_creds_path", "") or ""))
             # Apply correct visibility for restored type
             _update_remote_visibility()
+            # Update auth status
+            _update_gdrive_auth_status()
     except Exception:
         # Non-fatal; ignore if settings load fails
         pass
 
 # Initialize settings
 root.after(100, auto_load_settings)
+# Update Google Drive auth status after UI loads
+root.after(200, _update_gdrive_auth_status)
 
 root.mainloop()
 

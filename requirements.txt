@@ -1,12 +1,16 @@
-# Main project (task.py, sync_server.py, mysql_backup_gui.py)
+# Main project (task.py, sync_server.py)
 pytz>=2024.1
 playsound==1.2.2
+
+# Cloud sync support (task.py, mysql_backup_gui.py)
 boto3>=1.28.0
 
-# Google Drive remote backup (mysql_backup_gui.py)
-google-api-python-client>=2.151.0
-google-auth>=2.36.0
-google-auth-httplib2>=0.2.0
+# MySQL Backup Tool - Remote backup options
+# Google Drive OAuth2 support (mysql_backup_gui.py)
+google-api-python-client>=2.100.0
+google-auth>=2.23.0
+google-auth-httplib2>=0.1.1
+google-auth-oauthlib>=1.1.0
 
 # automation_otithee/index_gui.py
 Pillow>=10.0.0
