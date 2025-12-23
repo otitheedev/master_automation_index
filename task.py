@@ -45,7 +45,10 @@ DEFAULT_SETTINGS = {
     "sync_user": "default",
     "sync_token": "",
     "sync_interval_sec": 60,
-    "sync_conflict": "prefer_newer",  # prefer_local | prefer_server | prefer_newer
+    # Conflict policy is now hard‑wired to "prefer newest copy" in code so that
+    # the most recently modified DB (local or server) always wins.
+    # This key is kept only for backwards‑compatibility with older configs.
+    "sync_conflict": "prefer_newer",
     # FTP settings
     "sync_ftp_host": "",
     "sync_ftp_port": 21,
@@ -128,7 +131,8 @@ def sync_ftp() -> str:
     user = (settings.get("sync_ftp_user") or "").strip()
     password = (settings.get("sync_ftp_pass") or "").strip()
     remote_path = (settings.get("sync_ftp_path") or "/").strip().rstrip("/")
-    conflict = settings.get("sync_conflict", "prefer_newer")
+    # Always prefer the most recently modified DB (local vs server),
+    # regardless of any older "sync_conflict" setting.
     
     if not host or not user:
         return "FTP sync: missing host or username"
@@ -186,14 +190,10 @@ def sync_ftp() -> str:
             ftp.quit()
             return "FTP sync: up-to-date"
         
-        # Decide direction
-        direction = "download"
-        if conflict == "prefer_local":
-            direction = "upload"
-        elif conflict == "prefer_server":
-            direction = "download"
-        else:  # prefer_newer
-            direction = "upload" if local_mtime >= server_mtime else "download"
+        # Decide direction based purely on which copy is newer.
+        # - If local DB is newer (or same time), upload to server.
+        # - If server DB is newer, download from server.
+        direction = "upload" if local_mtime >= server_mtime else "download"
         
         if direction == "download":
             os.replace(tmp_remote, DB_NAME)
@@ -222,7 +222,8 @@ def sync_s3() -> str:
     region = (settings.get("sync_s3_region") or "us-east-1").strip()
     access_key = (settings.get("sync_s3_access_key") or "").strip()
     secret_key = (settings.get("sync_s3_secret_key") or "").strip()
-    conflict = settings.get("sync_conflict", "prefer_newer")
+    # Always prefer the most recently modified DB (local vs server),
+    # regardless of any older "sync_conflict" setting.
     
     if not bucket or not access_key or not secret_key:
         return "S3 sync: missing bucket, access key, or secret key"
@@ -268,14 +269,10 @@ def sync_s3() -> str:
             os.remove(tmp_remote)
             return "S3 sync: up-to-date"
         
-        # Decide direction
-        direction = "download"
-        if conflict == "prefer_local":
-            direction = "upload"
-        elif conflict == "prefer_server":
-            direction = "download"
-        else:  # prefer_newer
-            direction = "upload" if local_mtime >= server_mtime else "download"
+        # Decide direction based purely on which copy is newer.
+        # - If local DB is newer (or same time), upload to server.
+        # - If server DB is newer, download from server.
+        direction = "upload" if local_mtime >= server_mtime else "download"
         
         if direction == "download":
             os.replace(tmp_remote, DB_NAME)
@@ -297,8 +294,8 @@ def sync_http() -> str:
     server = (settings.get("sync_server_url") or "").strip()
     user = (settings.get("sync_user") or "default").strip() or "default"
     token = (settings.get("sync_token") or "").strip()
-    conflict = settings.get("sync_conflict", "prefer_newer")
-
+    # Always prefer the most recently modified DB (local vs server),
+    # regardless of any older "sync_conflict" setting.
     if not server:
         return "HTTP sync: missing server URL"
 
@@ -335,14 +332,10 @@ def sync_http() -> str:
     if local_exists and local_sha and server_sha and local_sha == server_sha:
         return "HTTP sync: up-to-date"
 
-    # Decide direction
-    direction = "download"
-    if conflict == "prefer_local":
-        direction = "upload"
-    elif conflict == "prefer_server":
-        direction = "download"
-    else:  # prefer_newer
-        direction = "upload" if local_mtime >= server_mtime else "download"
+    # Decide direction based purely on which copy is newer.
+    # - If local DB is newer (or same time), upload to server.
+    # - If server DB is newer, download from server.
+    direction = "upload" if local_mtime >= server_mtime else "download"
 
     if direction == "download":
         data = http_download_bytes(db_url, headers=headers, timeout=30)
