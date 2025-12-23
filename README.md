@@ -118,8 +118,8 @@ All automation tools feature:
   - Default location (Windows): `%APPDATA%\DailyDashboard\database\taskmask.db`
   - Default location (Linux): `~/DailyDashboard/database/taskmask.db`
   - Portable mode: Create `portable.txt` next to `task.py` to use `./database/taskmask.db`
-- **MySQL Backup Tool DB file**: **`backup_tool.db`** (stored in `mysql_client/` folder)
-  - Contains: saved connections, backup locations, backup history, and OAuth2 tokens
+- **Shared credentials/settings DB file**: **`settings.db`** (stored in the project root)
+  - Contains: saved MySQL connections, backup locations, backup history, OAuth2 tokens, and other shared credential/history settings
 
 ### Cloud Sync (Optional)
 Configure in **Tools → Settings**:

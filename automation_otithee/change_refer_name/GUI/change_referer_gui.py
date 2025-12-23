@@ -23,6 +23,16 @@ from webdriver_manager.chrome import ChromeDriverManager
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 import config
 
+# Shared settings DB for remembering credentials across tools
+try:
+    from settings_db import get_setting, set_setting
+except Exception:  # Fallback no-op if settings_db is not available
+    def get_setting(key, default=None):
+        return default
+
+    def set_setting(key, value):
+        pass
+
 # Add project root to path for icon_utils
 try:
     current_file = os.path.abspath(__file__)
@@ -95,28 +105,34 @@ class ChangeRefererGUI:
         )
         config_frame.pack(fill="x", pady=(0, 15))
         
+        # Load remembered values from shared settings DB (fallback to config defaults)
+        saved_login_url = get_setting("otithee_accounting_login_url", config.ACCOUNTING_LOGIN_URL)
+        saved_change_url = get_setting("otithee_accounting_change_referer_url", config.ACCOUNTING_CHANGE_REFERER_URL)
+        saved_username = get_setting("otithee_accounting_username", config.ACCOUNTING_USERNAME)
+        saved_password = get_setting("otithee_accounting_password", config.ACCOUNTING_PASSWORD)
+
         # Login URL
         tk.Label(config_frame, text="Login URL:", bg="#f5f7fa", font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w", pady=5)
         login_url_entry = tk.Entry(config_frame, width=50, font=("Segoe UI", 9))
-        login_url_entry.insert(0, config.ACCOUNTING_LOGIN_URL)
+        login_url_entry.insert(0, saved_login_url)
         login_url_entry.grid(row=0, column=1, sticky="ew", padx=10, pady=5)
         
         # Change Referer URL
         tk.Label(config_frame, text="Change Referer URL:", bg="#f5f7fa", font=("Segoe UI", 10)).grid(row=1, column=0, sticky="w", pady=5)
         referer_url_entry = tk.Entry(config_frame, width=50, font=("Segoe UI", 9))
-        referer_url_entry.insert(0, config.ACCOUNTING_CHANGE_REFERER_URL)
+        referer_url_entry.insert(0, saved_change_url)
         referer_url_entry.grid(row=1, column=1, sticky="ew", padx=10, pady=5)
         
         # Username
         tk.Label(config_frame, text="Username:", bg="#f5f7fa", font=("Segoe UI", 10)).grid(row=2, column=0, sticky="w", pady=5)
         username_entry = tk.Entry(config_frame, width=50, font=("Segoe UI", 9))
-        username_entry.insert(0, config.ACCOUNTING_USERNAME)
+        username_entry.insert(0, saved_username)
         username_entry.grid(row=2, column=1, sticky="ew", padx=10, pady=5)
         
         # Password
         tk.Label(config_frame, text="Password:", bg="#f5f7fa", font=("Segoe UI", 10)).grid(row=3, column=0, sticky="w", pady=5)
         password_entry = tk.Entry(config_frame, width=50, show="*", font=("Segoe UI", 9))
-        password_entry.insert(0, config.ACCOUNTING_PASSWORD)
+        password_entry.insert(0, saved_password)
         password_entry.grid(row=3, column=1, sticky="ew", padx=10, pady=5)
         
         config_frame.columnconfigure(1, weight=1)
@@ -458,6 +474,16 @@ class ChangeRefererGUI:
                 self.root.after(0, lambda: messagebox.showerror("Error", "Please enter username and password."))
                 self.root.after(0, self.reset_ui)
                 return
+
+            # Remember latest credentials/URLs in shared settings DB (best-effort)
+            try:
+                set_setting("otithee_accounting_login_url", login_url)
+                set_setting("otithee_accounting_change_referer_url", change_referer_url)
+                set_setting("otithee_accounting_username", username)
+                # Store password as-is; DB is local and already used for other credentials.
+                set_setting("otithee_accounting_password", password)
+            except Exception:
+                pass
             
             self.root.after(0, lambda: self.log(f"Reading input file: {input_file}"))
             df = pd.read_csv(input_file, dtype=str).fillna("")

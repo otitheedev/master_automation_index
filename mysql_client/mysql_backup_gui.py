@@ -48,6 +48,7 @@ import tarfile
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from icon_utils import set_window_icon
+from settings_db import get_settings_db_path
 
 # Optional S3 support
 try:
@@ -90,12 +91,10 @@ class DatabaseManager:
     
     def __init__(self, db_path=None):
         if db_path is None:
-            # Store backup_tool.db alongside this script (inside mysql_client folder)
-            # so it's easy to find and move with the project.
-            script_dir = Path(__file__).resolve().parent
-            db_dir = script_dir
-            db_dir.mkdir(parents=True, exist_ok=True)
-            db_path = db_dir / "backup_tool.db"
+            # Use the shared settings DB at the project root so that
+            # ALL credential/history storage for every tool can live in
+            # one place:  <project_root>/settings.db
+            db_path = get_settings_db_path()
         
         self.db_path = db_path
         self.init_database()
@@ -797,7 +796,8 @@ def connect_and_load_databases():
             )
             return
 
-    # Persist last-used connection details to backup_tool.db (for auto-fill next time)
+    # Persist last-used connection details to the shared settings.db
+    # (located at project root) for auto-fill next time.
     try:
         last_conn = {
             "server": server,
